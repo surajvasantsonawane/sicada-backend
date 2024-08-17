@@ -1,0 +1,187 @@
+definitions:
+  securitySchemes:
+    tokenauth:
+      type: basic
+      description: bearer auth
+      name: Authorization
+      in: header
+    demouser:
+      type: basic
+
+  register:
+    required:
+      - name
+      - email
+      - password
+      - accountType
+      - mobile
+      - countryCode
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      password: 
+        type: string  
+      accountType:
+        type: string
+      countryCode:
+        type: string    
+      mobile:
+        type: string
+    example:
+      name: "Suraj"
+      email: "surajvasantsonawane1998@gmail.com"
+      password: "Suraj@1234"
+      accountType: "Private"
+      countryCode: "+91"
+      mobile: "7448284482"
+
+  verifyOTP:
+    required:
+      - otp
+    properties:
+      otp:
+        type: integer
+
+  login:
+    required:
+      - email
+      - password
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    example:
+      email: "surajvasantsonawane1998@gmail.com"
+      password: "Suraj@1234"
+
+  forgotPassword:
+    required:
+      - email
+    properties:
+      email:
+        type: string
+    example:
+      email: "rohit.p@mailinator.com"
+
+  resetPassword:
+    required:
+      - userId
+      - password
+      - confirmPassword
+    properties:
+      userId:
+        type: string
+      password:
+        type: string
+      confirmPassword:
+        type: string
+    example:
+      userId: "650191eba9f1d34dd12d81c5"
+      password: "Mobiloitte@12"
+      confirmPassword: "Mobiloitte@12"
+
+  changePassword:
+    required:
+      - oldPassword
+      - newPassword
+      - confirmPassword
+    properties:
+      oldPassword:
+        type: string
+      newPassword:
+        type: string
+      confirmPassword:
+        type: string
+    example:
+      oldPassword: "Mobiloitte@1"
+      newPassword: "Mobiloitte@12"
+      confirmPassword: "Mobiloitte@12"
+
+  updateProfile:
+    required:
+      - name
+      - email
+      - userName
+      - countryCode
+      - mobileNumber
+    properties:
+      name:
+        type: string
+      email:
+        type: string
+      countryCode:
+        type: string
+      mobileNumber:
+        type: number
+      password:
+        type: string
+      confirmPassword:
+        type: string
+    example:
+      name: "Rohit Pandit"
+      email: "rohit.p@mailinator.com"
+      userName: "rohit.p"
+      countryCode: "+91"
+      mobileNumber: 7038415053
+
+  adminLogin:
+    required:
+      - email
+      - password
+    properties:
+      email:
+        type: string
+      password:
+        type: string
+    example:
+      email: "vinay-ad@mailinator.com"
+      password: "Mobiloitte@1"
+
+  nodeDetails:
+    required:
+      - nodeName
+      - nodeDuration
+      - nodeFeeType
+      - feeAmount
+      - rewardAmount
+      - nodeAmount
+    properties:
+      nodeName:
+        type: string
+      nodeDuration:
+        type: number
+      nodeFeeType:
+        type: string
+      nodeAmount:
+        type: number
+      feeAmount:
+        type: number
+      rewardAmount:
+        type: number
+    example:
+      nodeName: "Node Silver"
+      nodeDuration: 3
+      nodeFeeType: "MONTHLY"
+      nodeAmount: 100
+      feeAmount: 10
+      rewardAmount: 1
+
+  staticContentSection:
+    required:
+      - type
+      - title
+      - description
+    properties:
+      type:
+        type: string
+      title: 
+        type: string
+      description: 
+        type: string
+    example:
+      type: "Return-Policy"
+      title: "Return Policy"
+      description: "We want you to be completely satisfied with your purchase of blockchain nodes from [Your Company Name]. If you have any issues with your purchase, please review our return policy below for guidance on returns and refunds."
