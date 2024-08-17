@@ -3,7 +3,7 @@
   "hostAddress": "localhost:3062",
   "databaseHost": "localhost",
   "databasePort": "27017",
-  "databaseName": "Sicada",
+  "databaseName": "sicada",
   "websocketAddress":"wss://localhost",
   "jwtsecret": "nodejwt",
   "jwtresetsecret": "nodejwt",

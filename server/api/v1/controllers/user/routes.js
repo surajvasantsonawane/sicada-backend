@@ -9,6 +9,7 @@ export default Express.Router()
    .post('/register', controller.register)
    .post('/verifyOTP/:userId', controller.verifyOTP)
    .post('/login', controller.login)
+   .post('/resendotp/:userId', controller.resendOTP)
 
    
    .use(auth.verifyToken)

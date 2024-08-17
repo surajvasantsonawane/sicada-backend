@@ -28,6 +28,11 @@ const userServices = {
     let query = { $and: [{ status: { $ne: status.DELETE } }, { _id: { $ne: id } }, { email: email }] }
     return await userModel.findOne(query);
   },
+
+  emailMobileExist: async (mobileNumber, email) => {
+    let query = { $and: [{ status: { $ne: status.DELETE } }, { $or: [{ email: email }, { mobileNumber: Number(mobileNumber) }] }] }
+    return await userModel.findOne(query);
+  },
 }
 
 module.exports = { userServices };

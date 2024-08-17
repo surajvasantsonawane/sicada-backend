@@ -33,16 +33,26 @@ definitions:
       name: "Suraj"
       email: "surajvasantsonawane1998@gmail.com"
       password: "Suraj@1234"
-      accountType: "Private"
+      accountType: "PRIVATE"
       countryCode: "+91"
       mobile: "7448284482"
 
   verifyOTP:
     required:
-      - otp
+      - email_otp
+      - mobile_otp
     properties:
-      otp:
+      email_otp:
         type: integer
+      mobile_otp:
+        type: integer
+  
+  resendOTP:
+    required:
+      - type
+    properties:
+      type:
+        type: string
 
   login:
     required:

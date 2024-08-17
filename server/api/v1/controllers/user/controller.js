@@ -2,7 +2,7 @@ import Joi, { link } from "joi";
 const { joiPasswordExtendCore } = require("joi-password");
 const joiPassword = Joi.extend(joiPasswordExtendCore);
 import _ from "lodash";
-import bcrypt  from "bcrypt";
+import bcrypt from "bcrypt";
 import config from "config";
 import Web3 from "web3";
 import apiError from "../../../../helper/apiError";
@@ -14,186 +14,208 @@ import userType from "../../../../enums/userType";
 
 
 import { userServices } from "../../services/user";
-const { checkUserExists, createUser, emailUsernameExist, findUser, userCount, findUserData, updateUser, findAll
+const { checkUserExists, createUser, emailUsernameExist, findUser, userCount, findUserData, updateUser, findAll, emailMobileExist
 } = userServices;
 
 export class userController {
 
-    /**
-     * @swagger
-     * /user/register:
-     *   post:
-     *     tags:
-     *       - USER
-     *     summary: Register a new user
-     *     description: Registers a new user with the provided information.
-     *     parameters:
-     *       - name: register
-     *         description: register
-     *         in: body
-     *         required: true
-     *         schema:
-     *           $ref: '#/definitions/register'
-     *     responses:
-     *       200:
-     *         description: Returns success message
-     */
-    async register(req, res, next) {
-        const validationSchema = Joi.object({
-            name: Joi.string().required(),
-            email: Joi.string().email().required(),
-            password: Joi.string().required(), // Removed .email() to allow for password validation
-            accountType: Joi.string().valid('Corporate', 'Private').required(),
-            countryCode: Joi.string()
-                .pattern(/^\+\d{1,3}$/) // Ensures country code format like +1, +91, etc.
-                .required()
-                .messages({
-                    'string.pattern.base': 'Country code must be in the format +[country code]',
-                    'string.empty': 'Country code is required',
-                    'any.required': 'Country code is required'
-                }),
-            mobile: Joi.string()
-                .pattern(/^[0-9]{10}$/)
-                .required()
-                .messages({
-                    'string.pattern.base': 'Mobile number must be exactly 10 digits',
-                    'string.empty': 'Mobile number is required',
-                    'any.required': 'Mobile number is required'
-                })
-        });
-    
-        try {
-            if (req.body.email) req.body.email = req.body.email.toLowerCase();
-    
-            const { error, value } = validationSchema.validate(req.body);
-            if (error) {
-                return res.status(400).json({ error: error.details[0].message });
-            }
-    
-            const { name, email, password, mobile, accountType, countryCode } = value;
-            let userInfo = await emailUsernameExist(email);
-    
-            if (userInfo) {
-                if (userInfo.activateUser) {
-                    return res.status(400).json({ error: responseMessage.EMAIL_EXIST });
-                }
-            }
-    
-            if (!userInfo) {
-                // Hash the password using bcrypt
-                const hashedPassword = await bcrypt.hash(password, 10);
-    
-                const newUser = {
-                    name,
-                    email,
-                    password: hashedPassword,
-                    mobile,
-                    countryCode,
-                    accountType,
-                    otpVerification: false
-                };
-    
-                // Create the user
-                userInfo = await createUser(newUser);
-            }
-    
-            const otp = commonFunction.getOTP();
-            const otpTime = new Date().getTime() + 180000; // OTP expires in 3 minutes
-    
-            // Send OTP via email
-            await commonFunction.sendMailOtpNodeMailer(email, otp);
-    
-            // Update user with OTP and expiry time
-            await updateUser(
-                { _id: userInfo._id },
-                { otp: otp, otpTime: otpTime }
-            );
-    
-            const responseObj = {
-                _id: userInfo._id,
-                email: userInfo.email
-            };
-            return res.status(201).json(new response(responseObj, responseMessage.USER_CREATED));
-        } catch (error) {
-            console.error(error);
-            return next(error);
+  /**
+   * @swagger
+   * /user/register:
+   *   post:
+   *     tags:
+   *       - USER
+   *     summary: Register a new user
+   *     description: Registers a new user with the provided information.
+   *     parameters:
+   *       - name: register
+   *         description: register
+   *         in: body
+   *         required: true
+   *         schema:
+   *           $ref: '#/definitions/register'
+   *     responses:
+   *       200:
+   *         description: Returns success message
+   */
+  async register(req, res, next) {
+    const validationSchema = Joi.object({
+      name: Joi.string().required(),
+      email: Joi.string().email().required(),
+      password: Joi.string().required(),
+      accountType: Joi.string().valid('CORPORATE', 'PRIVATE').required(),
+      countryCode: Joi.string()
+        .pattern(/^\+\d{1,3}$/) // Ensures country code format like +1, +91, etc.
+        .required()
+        .messages({
+          'string.pattern.base': 'Country code must be in the format +[country code]',
+          'string.empty': 'Country code is required',
+          'any.required': 'Country code is required'
+        }),
+      mobile: Joi.string()
+        .pattern(/^[0-9]{10}$/)
+        .required()
+        .messages({
+          'string.pattern.base': 'Mobile number must be exactly 10 digits',
+          'string.empty': 'Mobile number is required',
+          'any.required': 'Mobile number is required'
+        })
+    });
+
+    try {
+      if (req.body.email) req.body.email = req.body.email.toLowerCase();
+
+      const { error, value } = validationSchema.validate(req.body);
+      if (error) {
+        return res.status(400).json({ error: error.details[0].message });
+      }
+
+      const { name, email, password, mobile, accountType, countryCode } = value;
+      let userInfo = await emailMobileExist(mobile, email);
+      if (userInfo && userInfo.isAccountCreated) {
+        if (userInfo.email == email) {
+          throw apiError.forbidden(responseMessage.EMAIL_EXIST)
+        } else {
+          throw apiError.forbidden(responseMessage.MOBILE_EXIST)
         }
+      }
+
+      if(userInfo && (userInfo.email != email || userInfo.mobileNumber != mobile)){
+        if (userInfo.email == email) {
+          throw apiError.forbidden(responseMessage.EMAIL_EXIST)
+        } else {
+          throw apiError.forbidden(responseMessage.MOBILE_EXIST)
+        }
+      }
+
+      if (!userInfo) {
+        // Hash the password using bcrypt
+        const hashedPassword = await bcrypt.hash(password, 10);
+
+        const newUser = {
+          name,
+          email,
+          password: hashedPassword,
+          mobileNumber: mobile,
+          countryCode,
+          accountType,
+          otpVerification: false
+        };
+
+        // Create the user
+        userInfo = await createUser(newUser);
+      }
+
+      const otp = {
+        email: commonFunction.getOTP(),
+        mobile: commonFunction.getOTP(),
+      }
+      const otpExpireTime = {
+        email: new Date().getTime() + 180000,
+        mobile: new Date().getTime() + 180000,
+      }
+
+      // Send OTP via email
+      // await commonFunction.sendMailOtpNodeMailer(email, otp);
+
+      // Send OTP via mobilenumber
+
+      // Update user with OTP and expiry time
+      await updateUser(
+        { _id: userInfo._id },
+        { otp, otpExpireTime }
+      );
+
+      const responseObj = {
+        _id: userInfo._id,
+        email: userInfo.email
+      };
+      return res.status(201).json(new response(responseObj, responseMessage.USER_CREATED));
+    } catch (error) {
+      console.error(error);
+      return next(error);
     }
+  }
 
-     /**
-     * @swagger
-     * /user/verifyOTP/:userId:
-     *   post:
-     *     tags:
-     *       - USER
-     *     description: verifyOTP after signUp to verified User on Platform
-     *     produces:
-     *       - application/json
-     *     parameters:
-     *       - name: userid
-     *         description: userid
-     *         in: query
-     *         required: true
-     *       - name: verifyOTP
-     *         description: verifyOTP
-     *         in: body
-     *         required: true
-     *         schema:
-     *           $ref: '#/definitions/verifyOTP'
-     *     responses:
-     *       200:
-     *         description: Returns success message
-     */
-    
+  /**
+  * @swagger
+  * /user/verifyOTP/{userId}:
+  *   post:
+  *     tags:
+  *       - USER
+  *     description: verifyOTP after signUp to verified User on Platform
+  *     produces:
+  *       - application/json
+  *     parameters:
+  *       - name: userId
+  *         description: User Id
+  *         in: path
+  *         required: true
+  *       - name: verifyOTP
+  *         description: verifyOTP
+  *         in: body
+  *         required: true
+  *         schema:
+  *           $ref: '#/definitions/verifyOTP'
+  *     responses:
+  *       200:
+  *         description: Returns success message
+  */
+  async verifyOTP(req, res, next) {
+    const validationSchema = Joi.object({
+      email_otp: Joi.number().required(),
+      mobile_otp: Joi.number().required(),
+      userId: Joi.string().required(),
+    });
 
-     async verifyOTP(req, res, next) {
-         const validationSchema = Joi.object({
-             otp: Joi.number().required(),
-         });
-     
-         try {
-             const { error, value } = validationSchema.validate(req.body);
-             if (error) {
-                 throw apiError.badRequest(error.details[0].message);
-             }
-     
-             const userResult = await findUser({ _id: req.query.userid });
-             console.log("User Query:", { _id: req.query.userid });
-             console.log("User Found:", userResult);
-     
-             if (!userResult) {
-                 throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-             }
-     
-             const { otp } = value;
-     
-             if (new Date().getTime() > userResult.otpTime) {
-                 throw apiError.badRequest(responseMessage.OTP_EXPIRED);
-             }
-     
-             if (userResult.otp !== otp) {
-                 throw apiError.badRequest(responseMessage.INCORRECT_OTP);
-             }
-     
-             const updateResult = await updateUser(
-                 { _id: userResult._id },
-                 { otpVerification: true }
-             );
-     
-             const responseObj = {
-                 _id: updateResult._id,
-                 email: updateResult.email,
-                 otpVerification: true,
-                
-             };
-     
-             return res.json(new response(responseObj, responseMessage.OTP_VERIFY));
-         } catch (error) {
-             console.log(error);
-             return next(error);
-         }
-     }
-     
+    try {
+      const { userId } = req.params
+      const { error, value } = validationSchema.validate({ ...req.body, userId: userId });
+      if (error) {
+        throw apiError.badRequest(error.details[0].message);
+      }
+
+      const userResult = await findUser({ _id: userId });
+
+      if (!userResult) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
+      const { mobile_otp, email_otp } = value;
+
+      if (new Date().getTime() > userResult.otpExpireTime.email) {
+        throw apiError.badRequest(responseMessage.OTP_EMAIL_EXPIRED);
+      }
+      
+      if (new Date().getTime() > userResult.otpExpireTime.mobile) {
+        throw apiError.badRequest(responseMessage.OTP_MOBILE_EXPIRED);
+      }
+
+      if (userResult.otp.email !== email_otp) {
+        throw apiError.badRequest(responseMessage.INCORRECT_EMAIL_OTP);
+      }
+
+      if (userResult.otp.mobile !== mobile_otp) {
+        throw apiError.badRequest(responseMessage.INCORRECT_MOBILE_OTP);
+      }
+
+      const updateResult = await updateUser(
+        { _id: userResult._id },
+        { 'otpVerification.email': true, 'otpVerification.mobile': true, isAccountCreated: true }
+      );
+
+      const responseObj = {
+        _id: updateResult._id,
+        otpVerification: true,
+      };
+
+      return res.json(new response(responseObj, responseMessage.OTP_VERIFY));
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  }
+
   /**
    * @swagger
    * /user/login:
@@ -223,7 +245,7 @@ export class userController {
     try {
       if (req.body.email) {
         req.body.email = req.body.email.toLowerCase();
-      }req
+      }
 
       // Validate request body
       const { error, value } = validationSchema.validate(req.body);
@@ -234,6 +256,7 @@ export class userController {
       // Find user by email and status
       let userResult = await findUser({
         email: email,
+        isAccountCreated: false,
         status: { $ne: status.DELETE },
       });
 
@@ -247,10 +270,10 @@ export class userController {
 
       if (!bcrypt.compareSync(password, userResult.password)) {
         throw apiError.conflict(responseMessage.INCORRECT_LOGIN);
-      } 
+      }
 
       // Generate token for the user
-      var token = await commonFunction.getToken({
+      const token = await commonFunction.getToken({
         id: userResult._id,
         email: userResult.email,
         userType: userResult.userType,
@@ -272,14 +295,18 @@ export class userController {
 
   /**
    * @swagger
-   * /user/resend:
-   *   put:
+   * /user/resendotp/{userId}:
+   *   post:
    *     tags:
    *       - USER
    *     description: resendOTP for User
    *     produces:
    *       - application/json
    *     parameters:
+   *       - name: userId
+   *         description: User Id
+   *         in: path
+   *         required: true
    *       - name: resendOTP
    *         description: resendOTP
    *         in: body
@@ -291,36 +318,62 @@ export class userController {
    *         description: Returns success message
    */
   async resendOTP(req, res, next) {
-    var validationSchema = {
-      email: Joi.string().required(),
-    };
+    const validationSchema = Joi.object({
+      userId: Joi.string().required(),
+      type: Joi.string().valid('email', 'mobile', 'both').required(),
+    });
+  
     try {
-      if (req.body.email) {
-        req.body.email = req.body.email.toLowerCase();
+      const { error, value } = validationSchema.validate({
+        ...req.body,
+        userId: req.params.userId,
+      });
+  
+      if (error) {
+        throw apiError.badRequest(error.details[0].message);
       }
-      var validatedBody = await Joi.validate(req.body, validationSchema);
-      const { email } = validatedBody;
-      var userResult = await findUser({
-        email: email,
+  
+      const { type, userId } = value;
+  
+      const userResult = await findUser({
+        _id: userId,
+        isAccountCreated: both ? true : false,
         status: { $ne: status.DELETE },
       });
+  
       if (!userResult) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-      var otp = commonFunction.getOTP();
-      var otpTime = new Date().getTime() + 180000;
-      await commonFunction.sendMailOtpNodeMailer(email, otp);
-      var updateResult = await updateUser(
+  
+      const otpExpireTime = new Date().getTime() + 180000; // 3 minutes
+      const otpData = {};
+  
+      if (type === 'email' || type === 'both') {
+        otpData['otp.email'] = commonFunction.getOTP();
+        otpData['otpExpireTime.email'] = otpExpireTime;
+        // Send email OTP
+        // await commonFunction.sendMailOtpNodeMailer(userResult.email, otpData['otp.email']);
+      }
+  
+      if (type === 'mobile' || type === 'both') {
+        otpData['otp.mobile'] = commonFunction.getOTP();
+        otpData['otpExpireTime.mobile'] = otpExpireTime;
+        // Send mobile OTP
+        // await commonFunction.sendMobileOtp(otpData['otp.mobile']);
+      }
+  
+      await updateUser(
         { _id: userResult._id },
-        { otp: otp, otpTime: otpTime }
+        otpData
       );
-
-      return res.json(new response(updateResult, responseMessage.NEW_OTP));
+  
+      return res.json(new response({ userId }, responseMessage.OTP_SEND));
     } catch (error) {
-      console.log(error);
+      console.error(error);
       return next(error);
     }
   }
+  
 
 }
 export default new userController();
