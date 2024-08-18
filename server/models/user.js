@@ -20,6 +20,17 @@ const userModel = new Schema(
     countryCode: { type: String, default: null },
     mobileNumber: { type: Number, default: null },
 
+    panCardNumber: { type: String, default: null },
+    aadhaarCardNumber: { type: Number, default: null },
+
+    documents: {
+      BS: { type: String, default: null },
+      GSTC: { type: String, default: null },
+      COI: { type: String, default: null },
+      EAE: { type: String, default: null },
+      SOP: { type: String, default: null },
+    },
+
     otp: {
       email: { type: Number, default: null },
       mobile: { type: Number, default: null },

@@ -6,8 +6,6 @@
   "author": "no-moin <no-moin@mobiloitte.com>",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.1269.0",
-    "aws-sms-send": "^1.0.36",
     "axios": "^1.4.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.7.0",
@@ -25,7 +23,6 @@
     "doasync": "^2.0.1",
     "ethers": "^5.7.1",
     "express": "^4.17.1",
-    "express-fileupload": "^1.4.0",
     "fcm-push": "^1.1.3",
     "geoip-lite": "^1.4.6",
     "ip": "^1.1.8",

@@ -8,7 +8,6 @@ import morgan from "morgan";
 import swaggerUi from "swagger-ui-express";
 import swaggerJSDoc from "swagger-jsdoc";
 import apiErrorHandler from '../helper/apiErrorHandler';
-import fileUpload from "express-fileupload";
 
 const app = new express();
 const server = http.createServer(app);
@@ -29,14 +28,14 @@ const wsServer = new WebSocketServer({
 });
 class ExpressServer {
   constructor() {
-    app.use(fileUpload({
-      useTempFiles: true
-    }));
     app.use(express.json({ limit: '1000mb' }));
 
     app.use(express.urlencoded({ extended: true, limit: '1000mb' }))
 
     app.use(morgan('dev'))
+
+    // Serve static files from the 'uploads' directory
+    app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 
     app.use(
       cors({

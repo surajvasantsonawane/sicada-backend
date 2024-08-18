@@ -28,14 +28,14 @@ definitions:
       countryCode:
         type: string    
       mobile:
-        type: string
+        type: number
     example:
       name: "Suraj"
       email: "surajvasantsonawane1998@gmail.com"
       password: "Suraj@1234"
       accountType: "PRIVATE"
       countryCode: "+91"
-      mobile: "7448284482"
+      mobile: 7448284482
 
   verifyOTP:
     required:

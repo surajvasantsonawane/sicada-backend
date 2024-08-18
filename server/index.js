@@ -12,5 +12,3 @@ const server = new Server()
   .then((_server) => _server.listen(Config.get("port")));
 
 export default server;
-
-require("./helper/blockcchain")

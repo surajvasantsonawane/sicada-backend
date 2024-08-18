@@ -12,5 +12,8 @@ export default Express.Router()
    .post('/resendotp/:userId', controller.resendOTP)
 
    
+   .use(upload.uploadFile)
+   .post('/fileUpload', controller.fileUploadCont)
+   
    .use(auth.verifyToken)
    

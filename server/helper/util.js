@@ -24,6 +24,12 @@ const crypto = require('crypto');
 // });
 module.exports = {
 
+  
+  getImageUrlPhase2: async (files) => {
+    var result = await cloudinary.v2.uploader.upload(files, { resource_type: "auto", transformation: { duration: 30 } })
+    return result;
+  },
+
   getOTP() {
     var otp = Math.floor(100000 + Math.random() * 900000);
     return otp;
@@ -147,12 +153,12 @@ module.exports = {
   //   return mediaURL;
   // },
 
-  getImageUrl: async (files) => {
+  getSecureUrl: async (files) => {
     var result = await cloudinary.v2.uploader.upload(files, { resource_type: "auto" })
     return result;
   },
 
-  getSecureUrl: async (base64) => {
+  getImageUrl: async (base64) => {
     var result = await cloudinary.v2.uploader.upload(base64, { resource_type: "auto" });
     return result.secure_url;
   },

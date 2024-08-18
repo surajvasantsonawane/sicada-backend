@@ -1,4 +1,5 @@
 module.exports = {
+	UPLOAD_SUCCESS: 'File uploaded successfully.',
 	USER_EXIST: "User already exists",
 	EMAIL_EXIST: "Email already exists",
 	MOBILE_EXIST: "Mobile number already exists",

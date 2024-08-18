@@ -27,7 +27,8 @@ export class UploadHandler {
      * @param  {} next
      * @param  {} upload
      */
-    handleUploadError(req, res, next, upload) {
+     handleUploadError(req, res, next, upload) {
+         console.log("upload",upload);
         upload(req, res, function (err) {
             if (err) {
                 if (err.code === 'LIMIT_FILE_SIZE') {
@@ -46,12 +47,12 @@ export class UploadHandler {
      * @param  {} next
      */
     uploadFile(req, res, next) {
-
+        
         const upload = multer({
             storage: this.storage,
             fileFilter: function (req, file, cb) {
                 var ext = path.extname(file.originalname).toLowerCase();
-                console.log("sssssssss", ext)
+                console.log("sssssssss",ext)
                 // if (ext !== '.png' && ext !== '.jpg' && ext !== '.jpeg' && ext !== '.svg') {
                 //     return cb(Boom.badRequest('Only images are allowed'), false);
                 // }

@@ -80,7 +80,7 @@ export class userController {
         }
       }
 
-      if(userInfo && (userInfo.email != email || userInfo.mobileNumber != mobile)){
+      if (userInfo && (userInfo.email != email || userInfo.mobileNumber != mobile)) {
         if (userInfo.email == email) {
           throw apiError.forbidden(responseMessage.EMAIL_EXIST)
         } else {
@@ -186,7 +186,7 @@ export class userController {
       if (new Date().getTime() > userResult.otpExpireTime.email) {
         throw apiError.badRequest(responseMessage.OTP_EMAIL_EXPIRED);
       }
-      
+
       if (new Date().getTime() > userResult.otpExpireTime.mobile) {
         throw apiError.badRequest(responseMessage.OTP_MOBILE_EXPIRED);
       }
@@ -322,58 +322,87 @@ export class userController {
       userId: Joi.string().required(),
       type: Joi.string().valid('email', 'mobile', 'both').required(),
     });
-  
+
     try {
       const { error, value } = validationSchema.validate({
         ...req.body,
         userId: req.params.userId,
       });
-  
+
       if (error) {
         throw apiError.badRequest(error.details[0].message);
       }
-  
+
       const { type, userId } = value;
-  
+
       const userResult = await findUser({
         _id: userId,
         isAccountCreated: both ? true : false,
         status: { $ne: status.DELETE },
       });
-  
+
       if (!userResult) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-  
+
       const otpExpireTime = new Date().getTime() + 180000; // 3 minutes
       const otpData = {};
-  
+
       if (type === 'email' || type === 'both') {
         otpData['otp.email'] = commonFunction.getOTP();
         otpData['otpExpireTime.email'] = otpExpireTime;
         // Send email OTP
         // await commonFunction.sendMailOtpNodeMailer(userResult.email, otpData['otp.email']);
       }
-  
+
       if (type === 'mobile' || type === 'both') {
         otpData['otp.mobile'] = commonFunction.getOTP();
         otpData['otpExpireTime.mobile'] = otpExpireTime;
         // Send mobile OTP
         // await commonFunction.sendMobileOtp(otpData['otp.mobile']);
       }
-  
+
       await updateUser(
         { _id: userResult._id },
         otpData
       );
-  
+
       return res.json(new response({ userId }, responseMessage.OTP_SEND));
     } catch (error) {
       console.error(error);
       return next(error);
     }
   }
-  
+
+  /**
+   * @swagger
+   * /user/fileUpload:
+   *   post:
+   *     tags:
+   *       - USER
+   *     description: fileUpload for User
+   *     produces:
+   *       - application/json
+   *     parameters:
+   *       - name: file
+   *         description: fileUpload for User
+   *         in: formData
+   *         type: file
+   *         required: true
+   *     responses:
+   *       200:
+   *         description: Returns success message
+   */
+  async fileUploadCont(req, res, next) {
+    try {
+      let data = await commonFunction.getImageUrlPhase2(req.files[0].path)
+      return res.json(new response({ url: data, data: req.files }, responseMessage.UPLOAD_SUCCESS));
+    } catch (error) {
+      console.error(error);
+      return next(error);
+    }
+  }
+
 
 }
 export default new userController();
