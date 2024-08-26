@@ -11,7 +11,7 @@ const tokenSchema = new mongoose.Schema(
         name: { type: String, required: true }, // Name of the token
         symbol: { type: String, required: true }, // Symbol of the token
         logo: { type: String, required: true },
-        chainId: { type: [Number], required: true }, // Array of chain IDs where the token is deployed
+        chainId: [{ type: Number, required: true }], // Array of chain IDs where the token is deployed
         status: {
             type: String,
             enum: [status.ACTIVE, status.BLOCK, status.DELETE],
@@ -53,17 +53,6 @@ export default tokenList;
 
             const createdTokens = await tokenList.insertMany(tokens);
             console.log("Tokens Created 😀 ", createdTokens);
-
-            // Get chains to update their token lists
-            const chains = await ChainList.find({ chainId: { $in: tokens.map(t => t.chainId) } });
-
-            for (const chain of chains) {
-                const chainTokens = tokens.filter(t => t.chainId === chain.chainId);
-                chain.tokens = chain.tokens.concat(chainTokens.map(t => t._id));
-                await chain.save();
-            }
-
-            console.log("Chain lists updated with tokens 😀");
 
         }
     } catch (error) {

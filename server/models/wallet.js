@@ -11,17 +11,8 @@ const options = {
 
 const userWalletModel = new Schema(
   {
-    address: { type: String, default: null },
     balance: { type: Number, default: 0 },
-    private: {
-      key: { type: String, default: null },
-      iv: { type: String, default: null },
-    },
-    status: {
-      type: String,
-      enum: [status.ACTIVE, status.BLOCK, status.DELETE],
-      default: status.ACTIVE,
-    },
+    address: { type: String, default: "" },
     userId: { type: Mongoose.Schema.Types.ObjectId, ref: "user" },
   },
   options

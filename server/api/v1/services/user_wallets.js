@@ -18,6 +18,10 @@ const userWalletServices = {
   upsertUserWallet: async (query, updateObj) => {
     return await userWalletModel.findOneAndUpdate(query, updateObj, { new: true, upsert: true });
   },
+
+  insertManyUserWallet: async (insertObj) => {
+    return await userWalletModel.insertMany(insertObj);
+  },
 }
 
 module.exports = { userWalletServices };
