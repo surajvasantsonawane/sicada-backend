@@ -8,12 +8,20 @@ export default Express.Router()
 
    .post('/register', controller.register)
    .post('/verifyOTP/:userId', controller.verifyOTP)
-   .post('/login', controller.login)
    .post('/resendotp/:userId', controller.resendOTP)
+   .post('/verifySingleOTP/:userId', controller.verifySingleOTP)
+   .post('/login', controller.login)
+
+ 
+
+   .use(auth.verifyToken)
+   .put('/editProfile',controller.editProfile)
+   .get('/getProfile',controller.getProfile)
+   .put('/confirmRegistration',controller.confirmRegistration)
+   .put('/editUserFullProfile',controller.editUserFullProfile)
 
    
+   .get('/getMyassets',controller.getMyassets)
+
    .use(upload.uploadFile)
    .post('/fileUpload', controller.fileUploadCont)
-   
-   .use(auth.verifyToken)
-   

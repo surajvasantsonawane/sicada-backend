@@ -132,35 +132,51 @@ module.exports = {
     return await transporter.sendMail(mailOptions);
   },
 
-  // getImageUrl: async (files) => {
-  //   var mediaURL;
-  //   var date = new Date().getTime()
-  //   const fileContent = fs.readFileSync(files[0].path);
-  //   console.log("fileContent", fileContent);
-  //   const params = {
-  //     Bucket: config.get('AWS.bucketName'),
-  //     ContentType: files[0].mimetype,
-  //     Key: `uploads/${date}${files[0].filename}`,
-  //     Body: fileContent
-  //   };
-  //   console.log("params", params);
+  getImageUrl: async (files) => {
+    console.log("files: ", files)
+    await cloudinary.config({
+      cloud_name: config.get("cloudinary.cloud_name"),
+      api_key: config.get("cloudinary.api_key"),
+      api_secret: config.get("cloudinary.api_secret"),
+    });
 
-  //   let data = await s3.upload(params).promise();
-  //   console.log("data", data);
-
-  //   console.log(`File uploaded successfully. ${data.Location}`);
-  //   mediaURL = data.Location
-  //   return mediaURL;
-  // },
+    var result = await cloudinary.v2.uploader.upload(files, {
+      resource_type: "auto"
+    });
+    return result;
+  },
 
   getSecureUrl: async (files) => {
     var result = await cloudinary.v2.uploader.upload(files, { resource_type: "auto" })
     return result;
   },
 
-  getImageUrl: async (base64) => {
-    var result = await cloudinary.v2.uploader.upload(base64, { resource_type: "auto" });
-    return result.secure_url;
+  // getImageUrl: async (base64) => {
+  //   var result = await cloudinary.v2.uploader.upload(base64, { resource_type: "auto" });
+  //   return result.secure_url;
+  // },
+
+  getImageUrlUsingFile: async (filePath) => {
+    try {
+      console.log("File path: ", filePath);
+      
+      // Cloudinary configuration
+      cloudinary.config({
+        cloud_name: config.get("cloudinary.cloud_name"),
+        api_key: config.get("cloudinary.api_key"),
+        api_secret: config.get("cloudinary.api_secret"),
+      });
+
+      // Upload file to Cloudinary
+      const result = await cloudinary.uploader.upload(filePath, {
+        resource_type: "auto", // Auto-detect file type (image, video, raw)
+      });
+
+      return result.url; // Return the URL of the uploaded file
+    } catch (error) {
+      console.error("Error uploading to Cloudinary:", error);
+      throw error;
+    }
   },
 
   // getSecureUrl: async (image) => {

@@ -35,7 +35,8 @@ class ExpressServer {
     app.use(morgan('dev'))
 
     // Serve static files from the 'uploads' directory
-    app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+   // app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
+    app.use('/uploads', express.static('uploads'));
 
     app.use(
       cors({
@@ -84,7 +85,11 @@ class ExpressServer {
         },
         (err) => {
           if (err) {
-            console.log(`Error in mongodb connection ${err.message}`);
+            console.log(`Error in mongodb fileUploadCont
+              
+              
+              
+              connection ${err.message}`);
             return reject(err);
           }
           console.log("Mongodb connection established");

@@ -12,7 +12,6 @@ definitions:
     required:
       - name
       - email
-      - password
       - accountType
       - mobile
       - countryCode
@@ -20,9 +19,7 @@ definitions:
       name:
         type: string
       email:
-        type: string
-      password: 
-        type: string  
+        type: string 
       accountType:
         type: string
       countryCode:
@@ -32,8 +29,7 @@ definitions:
     example:
       name: "Suraj"
       email: "surajvasantsonawane1998@gmail.com"
-      password: "Suraj@1234"
-      accountType: "PRIVATE"
+      accountType: "INDIVIDUAL"
       countryCode: "+91"
       mobile: 7448284482
 
@@ -47,6 +43,15 @@ definitions:
       mobile_otp:
         type: integer
   
+  verifySingleOTP:
+    required:
+      - type
+    properties:
+      type:
+        type: string
+      otp:
+        type: integer
+
   resendOTP:
     required:
       - type
@@ -55,17 +60,12 @@ definitions:
         type: string
 
   login:
-    required:
-      - email
-      - password
     properties:
       email:
         type: string
-      password:
-        type: string
-    example:
-      email: "surajvasantsonawane1998@gmail.com"
-      password: "Suraj@1234"
+      mobile:
+        type: number        
+
 
   forgotPassword:
     required:
@@ -136,6 +136,13 @@ definitions:
       userName: "rohit.p"
       countryCode: "+91"
       mobileNumber: 7038415053
+
+  editProfile:
+    properties:
+      panCardNumber:
+        type: string
+      aadhaarCardNumber:
+        type: string
 
   adminLogin:
     required:

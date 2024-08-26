@@ -1,7 +1,6 @@
 {
   "port": 3062,
-  "hostAddress": "localhost:3062",
-  "databaseHost": "localhost",
+  "hostAddress": "192.168.0.130",
   "databasePort": "27017",
   "databaseName": "sicada",
   "websocketAddress":"wss://localhost",
@@ -14,7 +13,7 @@
     "info": {
       "title": "Sicada",
       "version": "2.0",
-      "description": "The OwnBlockChain CryptoWallet Node Validator is an innovative and versatile blockchain infrastructure project that aims to revolutionize the world of cryptocurrency and decentralized finance (DeFi). This project combines the essential components of blockchain technology, including a custom blockchain, a secure cryptocurrency wallet, and a robust node validation system, to create a comprehensive ecosystem that empowers users to take control of their digital assets and participate in the blockchain network."
+      "description": "Developing a P2P platform using Binance is an exciting opportunity to empower users with direct and secure transactions. Your platform will offer a decentralized marketplace where users can trade with confidence, benefiting from Binance's robust security and global reach. This will not only enhance accessibility but also foster trust and transparency in the digital economy."
     },
     "basePath": "/api/v1",
     "securityDefinitions": {

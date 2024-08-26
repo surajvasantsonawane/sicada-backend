@@ -1,11 +1,16 @@
 module.exports = {
+	OTP_SEND: "Otp send request successfully",
 	UPLOAD_SUCCESS: 'File uploaded successfully.',
 	USER_EXIST: "User already exists",
+	DETAILS_FETCHED: 'Details has been fetched successfully.',
 	EMAIL_EXIST: "Email already exists",
 	MOBILE_EXIST: "Mobile number already exists",
+	ACCOUNT_NOT_CREATED: "Account has not been created. Please complete the account creation process before logging in.",
 	SESSION_EXPIRED: "Your session has expired. Please log in again.",
 	USER_NOT_FOUND: "User not found.",
 	ADMIN_NOT_FOUND: "Admin not found.",
+	INVALID_OTP_TYPE: "Invalid OTP type",
+	INVALID_ACCOUNT_TYPE: "Invalid Account Type",
 	NODE_NOT_FOUND: "Node not found.",
 	NODE_NOT_FOUND_OR_SUSPENDED: "Node not found or Node is acive not suspended.",
 	CONNECT_WALLET: "Connect Wallet Address is mendatory.",
@@ -55,4 +60,6 @@ module.exports = {
 	TRANSACTION_FAILED: "Transaction has failed.",
 	AMOUNT_WRONG: "Your entered amount is incorrect.",
 	UNBLOCK_BY_ADMIN: 'You have been unblocked by admin.',
+
+	GET_DATA: 'Data retrieved successfully.',
 };

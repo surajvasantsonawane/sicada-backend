@@ -9,6 +9,7 @@ module.exports = {
 
   verifyToken(req, res, next) {
     if (req.headers.token) {
+      console.log(req.headers.token, 101)
       jwt.verify(req.headers.token, config.get('jwtsecret'), (err, result) => {
         if (err) {
           if (err.name == "TokenExpiredError") {
@@ -19,7 +20,10 @@ module.exports = {
           }
         }
         else {
-          userModel.findOne({ _id: result._id }, (error, result2) => {
+          
+          userModel.findOne({ _id: result.id }, (error, result2) => {
+
+
             if (error) {
               return next(error)
             }
@@ -34,8 +38,8 @@ module.exports = {
                 throw apiError.invalid(responseMessage.DELETE_BY_ADMIN);
               }
               else {
-                req.userId = result._id;
-                req.userDetails = result
+                req.userId = result2._id;
+                req.userDetails = result2
                 next();
               }
             }

@@ -30,7 +30,7 @@ const userServices = {
   },
 
   emailMobileExist: async (mobileNumber, email) => {
-    let query = { $and: [{ status: { $ne: status.DELETE } }, { $or: [{ email: email }, { mobileNumber: Number(mobileNumber) }] }] }
+    let query = { $and: [{ status: { $ne: status.DELETE } }, { $or: [{ email: email }, { mobileNumber: mobileNumber }] }] }
     return await userModel.findOne(query);
   },
 }
