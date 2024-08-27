@@ -93,6 +93,19 @@ definitions:
       password: "Mobiloitte@12"
       confirmPassword: "Mobiloitte@12"
 
+  deposit:
+    required:
+      - oldPassword
+      - newPassword
+      - confirmPassword
+    properties:
+      oldPassword:
+        type: string
+      newPassword:
+        type: string
+      confirmPassword:
+        type: string    
+
   changePassword:
     required:
       - oldPassword

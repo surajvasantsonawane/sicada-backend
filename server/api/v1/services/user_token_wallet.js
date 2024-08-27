@@ -11,7 +11,9 @@ const userTokenWalletServices = {
       throw new Error(`Error creating user token wallet: ${error.message}`);
     }
   },
-
+  findUserWallet: async (query) => {
+    return await tokenListModel.findOne(query);
+},
   // Find a user token wallet by query
   findUserTokenWallet: async (query) => {
     try {

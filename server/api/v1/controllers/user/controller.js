@@ -2,6 +2,8 @@ import Joi, { link } from "joi";
 const { joiPasswordExtendCore } = require("joi-password");
 const joiPassword = Joi.extend(joiPasswordExtendCore);
 const { ethers } = require('ethers');
+const moment = require('moment');
+const mysql = require('mysql');
 
 import _ from "lodash";
 import bcrypt from "bcrypt";
@@ -66,6 +68,7 @@ export class userController {
    *       200:
    *         description: Returns success message
    */
+
   async register(req, res, next) {
     // Define the validation schema using Joi
     const validationSchema = Joi.object({
@@ -151,6 +154,7 @@ export class userController {
         email: commonFunction.getOTP(),
         mobile: commonFunction.getOTP(),
       };
+      console.log("🚀 ~ userController ~ register ~ otp:", otp)
       // Set OTP expiration time (e.g., 3 minutes from now)
       const otpExpireTime = {
         email: new Date().getTime() + 180000,
@@ -171,7 +175,8 @@ export class userController {
       // Prepare response object with essential user details
       const responseObj = {
         _id: userInfo._id,
-        email: userInfo.email
+        email: userInfo.email,
+        otp: otp
       };
       // Respond with the created user and success message
       return res.status(201).json(new response(responseObj, responseMessage.OTP_SEND));
@@ -364,13 +369,14 @@ export class userController {
         // Uncomment and ensure the sendMobileOtp function is implemented correctly
         // await commonFunction.sendMobileOtp(mobile, otpData['otp.mobile']);
       }
-
+console.log(otpData,101)
       // Update user with OTP and expiration details
       await updateUser({ _id: userInfo._id }, { ...otpData, ...otpVerificationUpdate });
 
       const responseObj = {
         _id: userInfo._id,
         type: email ? 'email' : 'mobile',
+        otpData: otpData
       };
 
       // Send response
@@ -381,7 +387,6 @@ export class userController {
       return next(error);
     }
   }
-
 
   /**
  * @swagger
@@ -575,7 +580,7 @@ export class userController {
       );
 
       // Respond with a success message and the userId
-      return res.json(new response({ userId, type: type }, responseMessage.OTP_SEND));
+      return res.json(new response({ userId, type: type, otpData: otpData }, responseMessage.OTP_SEND));
     } catch (error) {
       // Log the error and pass it to the error handler
       console.error(error);
@@ -636,8 +641,6 @@ export class userController {
    *       200:
    *         description: Returns success message
    */
-
-
 
   async fileUploadCont(req, res, next) {
     // Define the validation schema
@@ -1154,6 +1157,60 @@ export class userController {
       return next(error);
     }
   }
+
+  /**
+   * @swagger
+   * /user/:deposit
+   *   get:
+   *     tags:
+   *       - USER
+   *     description: Deposit Tokens
+   *     produces:
+   *       - application/json
+   *     parameters:
+   *       - name: token
+   *         description: token
+   *         in: header
+   *         required: true
+   *       - name: deposit
+   *         description: deposit
+   *         in: body
+   *         required: false
+   *         schema:
+   *           $ref: '#/definitions/deposit'
+   *     responses:
+   *       200:
+   *         description: Returns success message
+   */
+
+  async deposit(req, res, next) {
+    try {
+      let userResult = await findUser({
+        _id: req.userId,
+        status: { $ne: status.DELETE },
+      });
+      if (!userResult) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
+      const userWalletDetails = await findUserWallet({
+        userId: userResult._id,
+        status: status.ACTIVE,
+      });
+      console.log("🚀 ~ file: controller.js:935 ~ userController ~ receiveMoney ~ userWalletDetails:", userWalletDetails)
+      if (!userWalletDetails) {
+        throw apiError.notFound("No user wallet found!!");
+      }
+
+     
+        return res.json(new response(balance, responseMessage.DATA_FOUND));
+      }
+    } catch (error) {
+      console.log(error);
+      return next(error);
+    }
+  }
+
 
 
 }

@@ -1,5 +1,6 @@
 {
   "port": 3062,
+  "hostAddress": "localhost:3062",
   "databaseHost": "localhost",
   "databasePort": "27017",
   "databaseName": "sicada",

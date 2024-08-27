@@ -13,7 +13,7 @@ export default Express.Router()
    .post('/login', controller.login)
 
  
-
+   
    .use(auth.verifyToken)
    .put('/editProfile',controller.editProfile)
    .get('/getProfile',controller.getProfile)
