@@ -10,10 +10,11 @@ const tokenContractSchema = new mongoose.Schema(
         name: { type: String, required: true }, // Name of the token
         symbol: { type: String, required: true }, // Symbol of the token
         logo: { type: String, required: true },
-        type: { type: String, required: true },
+        standard: { type: String, required: true },
         contractAddress: { type: String, required: true }, // Contract address of the token on the chain
         decimals: { type: Number, required: true }, // Decimals of the token
         chainId: { type: Number, required: true }, // Chain ID where the token is deployed
+        blockchainType: { type : String}, 
     },
     {
         collection: 'tokensContractAddress',
@@ -41,7 +42,8 @@ export default tokenList;
                     id: 'tether',
                     name: 'Tether',
                     symbol: 'USDT',
-                    type: 'ERC-20',
+                    standard: 'ERC-20',
+                    blockchainType: 'EVM_Based', 
                     contractAddress: '0xdac17f958d2ee523a2206206994597c13d831ec7', // Ethereum address for USDT
                     decimals: 6,
                     chainId: 1, // Ethereum Mainnet
@@ -51,7 +53,8 @@ export default tokenList;
                     id: 'tether',
                     name: 'Tether',
                     symbol: 'USDT',
-                    type: 'BEP-20',
+                    standard: 'BEP-20',
+                    blockchainType: 'EVM_Based', 
                     contractAddress: '0x55d398326f99059ff775485246999027b319795', // Binance Smart Chain address for USDT
                     decimals: 18,
                     chainId: 56, // Binance Smart Chain Mainnet

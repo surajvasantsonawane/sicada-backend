@@ -12,7 +12,6 @@ const options = {
 const userWalletModel = new Schema(
   {
     balance: { type: Number, default: 0 },
-    address: { type: String, default: "" },
     userId: { type: Mongoose.Schema.Types.ObjectId, ref: "user" },
   },
   options

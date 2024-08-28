@@ -95,16 +95,10 @@ definitions:
 
   deposit:
     required:
-      - oldPassword
-      - newPassword
-      - confirmPassword
+      - amount
     properties:
-      oldPassword:
-        type: string
-      newPassword:
-        type: string
-      confirmPassword:
-        type: string    
+      amount:
+        type: number
 
   changePassword:
     required:

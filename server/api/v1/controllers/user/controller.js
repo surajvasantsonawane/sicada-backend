@@ -15,17 +15,33 @@ import responseMessage from "../../../../../assets/responseMessage";
 import commonFunction from "../../../../helper/util";
 import status from "../../../../enums/status";
 import userType from "../../../../enums/userType";
+import coin from "../../../../enums/coin";
+import chain from "../../../../enums/chain";
 import sourceOfPayment from "../../../../enums/sourceOfPayment";
-
 import cryptoFunction from "../../../../helper/encryptionKey";
 import ethersFunction from "../../../../helper/ethers";
+const QRCode = require('qrcode');
+
+async function generateQRCode(address) {
+  try {
+    const qrCodeData = await QRCode.toDataURL(address);
+    return qrCodeData;
+  } catch (error) {
+    console.error('Error generating QR code:', error);
+    throw error;
+  }
+}
+// Example conversion function used in the API
+function convertUSDToDollars(usdAmount) {
+  return usdAmount.toFixed(2);
+}
 
 import { userServices } from "../../services/user";
 const { createUser, findUser, updateUser, emailMobileExist } = userServices;
 
 
 import { userWalletServices } from "../../services/user_wallets";
-const { upsertUserWallet, findUserWallet, insertManyUserWallet } = userWalletServices;
+const { upsertUserWallet, createUserWallet, updateUserWallet, insertManyUserWallet } = userWalletServices;
 
 
 import { chainListServices } from "../../services/chain_list";
@@ -37,15 +53,11 @@ const { findTokenList, findToken } = tokenListServices;
 
 
 import { userTokenWalletServices } from "../../services/user_token_wallet";
-const { createUserTokenWallet } = userTokenWalletServices;
+const { createUserTokenWallet, findUserWallet } = userTokenWalletServices;
 
 
 import { tokenServices } from "../../services/token";
 const { aggregateTokens } = tokenServices;
-
-
-
-
 
 export class userController {
 
@@ -945,70 +957,70 @@ console.log(otpData,101)
     */
 
   async editUserFullProfile(req, res, next) {
-    // Define the validation schema for the request body
+
+    // Define the validation schema
     let validationSchema = Joi.object({
-      name: Joi.string().min(2).max(50).optional(),
-      email: Joi.string().email().optional(),
-      countryCode: Joi.string().length(2).optional(),
-      mobileNumber: Joi.string().pattern(/^[0-9]{10}$/).optional(), // Validates a 10-digit number
-      panCardNumber: Joi.string().pattern(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/).optional(), // Validates a PAN card format
-      aadhaarCardNumber: Joi.string().pattern(/^[0-9]{12}$/).optional(), // Validates a 12-digit Aadhaar number
-      bankStatement: Joi.string().optional(),
-      gstCertificate: Joi.string().optional(),
-      certificateOfIncorporation: Joi.string().optional(),
-      EAOA: Joi.string().optional(),
-      EMOA: Joi.string().optional(),
-      sourceOfPayment: Joi.string().valid("SALARY", "BUSINESS", "INVESTMENT", "SAVINGS", "OTHER").optional(),
-      p2pMerchant: Joi.string().optional(),
+        name: Joi.string().min(2).max(50).optional(),
+        email: Joi.string().email().optional(),
+        countryCode: Joi.string().length(2).optional(),
+        mobileNumber: Joi.string().pattern(/^[0-9]{10}$/).optional(),
+        panCardNumber: Joi.string().pattern(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/).optional(),
+        aadhaarCardNumber: Joi.string().pattern(/^[0-9]{12}$/).optional(),
+        sourceOfPayment: Joi.string().valid("SALARY", "BUSINESS", "INVESTMENT", "SAVINGS", "OTHER").optional(),
+        p2pMerchant: Joi.string().optional(),
     });
 
     try {
-      // Find the user by ID and ensure they are not deleted
-      let userResult = await findUser({
-        _id: req.userId,
-        status: { $ne: status.DELETE },
-      });
+        // Validate the request body
+        const validatedBody = await validationSchema.validateAsync(req.body);
+        console.log("Validated Body after Joi:", validatedBody);
 
-      if (!userResult) {
-        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-      }
+        // Initialize an object to store the file URLs
+        let fileUrls = {};
 
-      // Validate the request body
-      const validatedBody = await validationSchema.validateAsync(req.body);
+        // Process all uploaded files
+        if (req.files && req.files.length > 0) {
+            req.files.forEach(file => {
+                if (file.fieldname === 'bankStatement') {
+                    fileUrls.bankStatement = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+                } else if (file.fieldname === 'gstCertificate') {
+                    fileUrls.gstCertificate = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+                } else if (file.fieldname === 'certificateOfIncorporation') {
+                    fileUrls.certificateOfIncorporation = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+                } else if (file.fieldname === 'EAOA') {
+                    fileUrls.EAOA = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+                } else if (file.fieldname === 'EMOA') {
+                    fileUrls.EMOA = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
+                }
+            });
+        }
+        console.log("File URLs:", fileUrls);
 
-      // Initialize an object to store the file URLs
-      let fileUrls = {};
+        // Merge validated fields and file URLs for updating the user document
+        let updateObj = { ...validatedBody, ...fileUrls };
+        console.log("Final Update Object:", updateObj);
 
-      // Process all uploaded files
-      if (req.files && req.files.length > 0) {
-        req.files.forEach(file => {
-          if (file.fieldname === 'bankStatement') {
-            fileUrls.bankStatement = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-          } else if (file.fieldname === 'gstCertificate') {
-            fileUrls.gstCertificate = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-          } else if (file.fieldname === 'certificateOfIncorporation') {
-            fileUrls.certificateOfIncorporation = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-          } else if (file.fieldname === 'EAOA') {
-            fileUrls.EAOA = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-          } else if (file.fieldname === 'EMOA') {
-            fileUrls.EMOA = `${req.protocol}://${req.get('host')}/uploads/${file.filename}`;
-          }
-        });
-      }
+        // Ensure there's something to update
+        if (Object.keys(updateObj).length === 0) {
+            return res.status(400).json({ message: "No data provided for update." });
+        }
 
-      // Merge validated fields and file URLs for updating the user document
-      let updateObj = { ...validatedBody, ...fileUrls };
+        // Update the user document with the new data
+        const userResult = await findUser({ _id: req.userId, status: { $ne: status.DELETE } });
+        if (!userResult) {
+            throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+        }
 
-      // Update the user document with the new data
-      var result = await updateUser({ _id: userResult._id }, updateObj);
+        const result = await updateUser({ _id: userResult._id }, updateObj);
+        console.log("🚀 ~ userController ~ editUserFullProfile ~ result:", result);
 
-      // Return a success response
-      return res.json(new response(result, responseMessage.USER_UPDATED));
+        return res.json(new response(result, responseMessage.USER_UPDATED));
     } catch (error) {
-      console.log("error", error);
-      return next(error);
+        console.log("error", error);
+        return next(error);
     }
-  }
+}
+
 
   /**
    * @swagger
@@ -1032,54 +1044,54 @@ console.log(otpData,101)
 
   async confirmRegistration(req, res, next) {
     try {
-      // Generate a new wallet
-      const wallet = ethers.Wallet.createRandom();
-
-      // Extract the private key and address
-      const private_key = wallet.privateKey;
-      const address = wallet.address;
-
-      const IV = cryptoFunction.getIV();
-      const { iv, encryptedData } = cryptoFunction.encryptKey(private_key, IV);
-
-      // Define the initial balance (assuming you have a way to determine or set this)
-      const initialBalance = 0; // Set this value according to your needs
-
-      // Upsert user wallet with the new balance
-      await insertManyUserWallet([
-        { balance: initialBalance, userId: req.userId, address: "USDT" },
-        { balance: initialBalance, userId: req.userId, address: "BNB" }
-      ]);
-
       // Find the user by ID and type
       let userData = await findUser({ _id: req.userId, userType: userType.USER });
-
+  
       // Check if the user exists
-      if (!userData) throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+  
       // Update the finalConfirmation field to true
       userData.finalConfirmation = true;
-
-      // Save the updated user data with the balance if necessary
+  
+      // Save the updated user data with the finalConfirmation field
       const result = await updateUser({ _id: userData._id }, { finalConfirmation: true });
-
-      await createUserTokenWallet({ userId: userData._id, private: { iv, key: encryptedData }, address, });
-
-      // Include the balance in the response if needed
+      console.log("🚀 ~ userController ~ confirmRegistration ~ result:", result);
+  
+      if (!result) {
+        throw new Error("Failed to update user data.");
+      }
+  
+      // Define the initial balance if needed
+      const initialBalance = 0; // Set this value according to your needs or fetch it from another source
+  
+      // Upsert user wallet with the balance
+      let data = await createUserWallet({
+        userId: userData._id,
+        balance: initialBalance
+      });
+      console.log("🚀 ~ userController ~ confirmRegistration ~ data:", data);
+  
+      if (!data) {
+        throw new Error("Failed to upsert user wallet.");
+      }
+  
+      // Include the balance in the response
       const filteredUserResult = {
         _id: result._id,
         finalConfirmation: result.finalConfirmation,
-        balance: initialBalance // Include balance in the result if needed
+        balance: initialBalance // Include balance in the result
       };
-
+  
       // Respond with the updated result
       return res.json(new response(filteredUserResult, responseMessage.UPDATE_SUCCESS));
     } catch (error) {
-      return next(error);
+      console.error("Error in confirmRegistration:", error);
+      return next(error); // Pass error to the global error handler
     }
   }
-
-
+  
   /**
  * @swagger
  * /user/getMyassets:
@@ -1100,118 +1112,366 @@ console.log(otpData,101)
  *         description: Returns success message with asset details
  */
 
-  async getMyassets(req, res, next) {
+  // async getMyassets(req, res, next) {
+  //   try {
+  //     // Find user data
+  //     let userData = await findUser({ _id: req.userId, userType: userType.USER });
+  //     console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
+  
+  //     // Check if the user exists
+  //     if (!userData) {
+  //       throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+  //     }
+  
+  //     // Check if the user already has an EVM-based address
+  //     const userTokenWallet = await findUserWallet({ userId: req.userId });
+  
+  //     if (!userTokenWallet || !userTokenWallet.token_address || !userTokenWallet.token_address.EVM_Based) {
+  //       // Generate a new wallet only if the user doesn't have an EVM-based address
+  //       const wallet = ethers.Wallet.createRandom();
+  //       const private_key = wallet.privateKey;
+  //       const address = wallet.address;
+  
+  //       // Encrypt the private key
+  //       const IV = cryptoFunction.getIV();
+  //       const { iv, encryptedData } = cryptoFunction.encryptKey(private_key, IV);
+  
+  //       // Create the new user token wallet with the generated address and encrypted private key
+  //       await createUserTokenWallet({
+  //         userId: req.userId,
+  //         token_address: {
+  //           EVM_Based: {
+  //             address,
+  //             privateKey: encryptedData // Assuming 'private' should be 'privateKey'
+  //           }
+  //         }
+  //       });
+  //     }
+  
+  //     // Define the aggregation pipeline
+  //     const pipeline = [
+  //       {
+  //         $lookup: {
+  //           from: "tokensContractAddress",
+  //           localField: "chainId",
+  //           foreignField: "chainId",
+  //           as: "result"
+  //         }
+  //       },
+  //       {
+  //         $lookup: {
+  //           from: "user_wallet",
+  //           localField: "66cd596473e51d1886c4b75f",
+  //           foreignField: "address",
+  //           as: "balance"
+  //         }
+  //       },
+  //       {
+  //         $unwind: "$balance"
+  //       },
+  //       {
+  //         $project: {
+  //           chainId: 1,
+  //           id: 1,
+  //           name: 1,
+  //           symbol: 1,
+  //           logo: 1,
+  //           "result.standard": 1,
+  //           "result.contractAddress": 1,
+  //           "result.chainId": 1,
+  //           "result.decimal": 1,
+  //           "balance.balance": 1
+  //         }
+  //       }
+  //     ];
+  
+  //     // Aggregate tokens
+  //     let list = await aggregateTokens(pipeline);
+  //     console.log("🚀 ~ userController ~ getMyassets ~ list:", list);
+  
+  //     // Combine user data with the token list
+  //     const responseData = {
+  //       user: {
+  //         name: userData.name,
+  //         email: userData.email,
+  //         finalConfirmation: userData.finalConfirmation
+  //       },
+  //       tokens: list
+  //     };
+  
+  //     // Return the combined data
+  //     return res.json(new response(responseData, responseMessage.GET_DATA));
+  //   } catch (error) {
+  //     console.error('Error getting my assets:', error);
+  //     return next(error);
+  //   }
+  // }
+  
+  async  getMyassets(req, res, next) {
     try {
+        // Find user data
+        let userData = await findUser({ _id: req.userId, userType: userType.USER });
+        console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
 
-      const pipeline = [
-        {
-          $lookup: {
-            from: "tokensContractAddress",
-            localField: "chainId",
-            foreignField: "chainId",
-            as: "result"
-          }
-        },
-        {
-          $lookup: {
-            from: "user_wallet",
-            localField: "symbol",
-            foreignField: "address",
-            as: "address"
-          }
-        },
-        {
-          $unwind: "$address"
-        },
-        {
-          $match: {
-            "address.userId": req.userId
-          }
-        },
-        {
-          $project: {
-            chainId: 1,
-            id: 1,
-            name: 1,
-            symbol: 1,
-            logo: 1,
-            "result.type": 1,
-            "result.contractAddress": 1,
-            "result.chainId": 1,
-            "result.decimal": 1,
-            address: 1
-          }
+        // Check if the user exists
+        if (!userData) {
+            throw apiError.notFound(responseMessage.USER_NOT_FOUND);
         }
-      ]
-      let list = await aggregateTokens(pipeline);
-      for (let index = 0; index < list.length; index++) {
-        const element = list[index];
-        const price = await ethersFunction.getUSDTPrice(element.id, 'usd');
-        element.price = price;
-      }
 
+        // Check if the user already has an EVM-based address
+        const userTokenWallet = await findUserWallet({ userId: req.userId });
 
-      return res.json(new response(list, responseMessage.GET_DATA));
+        if (!userTokenWallet || !userTokenWallet.token_address || !userTokenWallet.token_address.EVM_Based) {
+            // Generate a new wallet only if the user doesn't have an EVM-based address
+            const wallet = ethers.Wallet.createRandom();
+            const private_key = wallet.privateKey;
+            const address = wallet.address;
+
+            // Encrypt the private key
+            const IV = cryptoFunction.getIV();
+            const { iv, encryptedData } = cryptoFunction.encryptKey(private_key, IV);
+
+            // Create the new user token wallet with the generated address and encrypted private key
+            await createUserTokenWallet({
+                userId: req.userId,
+                token_address: {
+                    EVM_Based: {
+                        address,
+                        privateKey: encryptedData
+                    }
+                }
+            });
+        }
+
+        // Define the aggregation pipeline
+        const pipeline = [
+            {
+                $lookup: {
+                    from: "tokensContractAddress",
+                    localField: "chainId",
+                    foreignField: "chainId",
+                    as: "result"
+                }
+            },
+            {
+                $lookup: {
+                    from: "user_wallet",
+                    localField: "66cd596473e51d1886c4b75f",
+                    foreignField: "address",
+                    as: "balance"
+                }
+            },
+            {
+                $unwind: "$balance"
+            },
+            {
+                $project: {
+                    chainId: 1,
+                    id: 1,
+                    name: 1,
+                    symbol: 1,
+                    logo: 1,
+                    "result.standard": 1,
+                    "result.contractAddress": 1,
+                    "result.chainId": 1,
+                    "result.decimal": 1,
+                    "balance.balance": 1
+                }
+            }
+        ];
+
+        // Aggregate tokens
+        let list = await aggregateTokens(pipeline);
+        console.log("🚀 ~ userController ~ getMyassets ~ list:", list);
+
+        // Convert balance to dollars and store it in a new key
+        if (list && list.length > 0 && list[0].balance && list[0].balance.balance) {
+            const originalBalance = list[0].balance.balance;
+            const convertedBalance = convertUSDToDollars(originalBalance);
+
+            // Store the converted balance in a new key
+            list[0].balance.convertedBalance = convertedBalance;
+        }
+
+        // Combine user data with the token list
+        const responseData = {
+            user: {
+                name: userData.name,
+                email: userData.email,
+                availableBalance: 180.0004222,
+                pendingTransaction: 20.0000,
+                finalConfirmation: userData.finalConfirmation,
+            },
+            tokens: list
+        };
+
+        // Return the combined data
+        return res.json(new response(responseData, responseMessage.GET_DATA));
     } catch (error) {
-      console.error('Error getting my assets:', error);
-      return next(error);
+        console.error('Error getting my assets:', error);
+        return next(error);
     }
-  }
+}
 
+    /**
+     * @swagger
+     * /user/deposit:
+     *   post:
+     *     tags:
+     *       - USER
+     *     description: deposit
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: token
+     *         description: token
+     *         in: header
+     *         required: true
+     *       - name: coin
+     *         description: coin
+     *         enum: ["BTC", "USDT"]
+     *         in: query
+     *         required: false
+     *       - name: chain
+     *         description: chain
+     *         enum: ["ERC_20","BEP_20"]
+     *         in: query
+     *         required: false
+     *     responses:
+     *       200:
+     *         description: Returns success message
+     */
+
+    async  deposit(req, res, next) {
+      try {
+  // Find user data
+  let userData = await findUser({ _id: req.userId, userType: userType.USER });
+  console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
+
+  // Check if the user exists
+  if (!userData) {
+      throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+  }
+          const findWalletAddress = {
+          token_address: {
+            EVM_Based: {
+              address: '0xD0434Dc261d56088d5FE84c9037f015E0A35aB4E',
+              privateKey: '860ba09c9e4922da78eef87362b6db28406b06e625da07ca2fcf2fd89778cf8aacc6d4a15e2898124e99c6a59c611c63bd429690e6fb3d82e0c92c00ca7630a16337ce257368d9c2488a2eabac96de85'
+            }
+          },
+          _id: '66cecd9d396f343b177ed2bd',
+          userId: '66cd596473e51d1886c4b75f',
+          createdAt: '2024-08-28T07:11:25.340Z',
+          updatedAt: '2024-08-28T07:11:25.340Z',
+          __v: 0
+        };
+    
+        const address = findWalletAddress.token_address.EVM_Based.address;
+    
+        // Generate QR code
+        const qrCodeData = await generateQRCode(address);
+    
+        // Return response with QR code data
+        return res.json({
+          success: true,
+          address: address,
+          qrCode: qrCodeData
+        });
+      } catch (error) {
+        console.error('Error during deposit:', error);
+        return next(error);
+      }
+    }
+    
   /**
-   * @swagger
-   * /user/:deposit
-   *   get:
-   *     tags:
-   *       - USER
-   *     description: Deposit Tokens
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: token
-   *         description: token
-   *         in: header
-   *         required: true
-   *       - name: deposit
-   *         description: deposit
-   *         in: body
-   *         required: false
-   *         schema:
-   *           $ref: '#/definitions/deposit'
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   */
+     * @swagger
+     * /user/withdraw:
+     *   post:
+     *     tags:
+     *       - USER
+     *     description: withdraw
+     *     produces:
+     *       - application/json
+     *     parameters:
+     *       - name: token
+     *         description: token
+     *         in: header
+     *         required: true
+     *       - name: coin
+     *         description: coin
+     *         enum: ["BTC", "USDT"]
+     *         in: query
+     *         required: true
+     *       - name: chain
+     *         description: chain
+     *         enum: ["ERC_20","BEP_20"]
+     *         in: query
+     *         required: true
+     *       - name: recipientAddress
+     *         description: recipientAddress
+     *         in: query
+     *         required: true
+     *       - name: memo
+     *         description: memo
+     *         in: query
+     *         required: true
+     *       - name: amount
+     *         description: amount
+     *         in: query
+     *         required: true
+     *     responses:
+     *       200:
+     *         description: Returns success message
+     */
 
-  async deposit(req, res, next) {
+  async  withdraw(req, res, next) {
+       // Define the validation schema
+       let validationSchema = Joi.object({
+        coin: Joi.string().required(),
+        chain: Joi.string().required(),
+        recipientAddress: Joi.string().required(),
+        memo: Joi.string().required(),
+        amount: Joi.string().required(),
+    })
     try {
-      let userResult = await findUser({
-        _id: req.userId,
-        status: { $ne: status.DELETE },
-      });
-      if (!userResult) {
-        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-      }
+        // Find user data
+        let userData = await findUser({ _id: req.userId, userType: userType.USER });
+        console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
 
-      const userWalletDetails = await findUserWallet({
-        userId: userResult._id,
-        status: status.ACTIVE,
-      });
-      console.log("🚀 ~ file: controller.js:935 ~ userController ~ receiveMoney ~ userWalletDetails:", userWalletDetails)
-      if (!userWalletDetails) {
-        throw apiError.notFound("No user wallet found!!");
-      }
+        // Check if the user exists
+        if (!userData) {
+            throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+        }
+   // Generate OTP for email and mobile
+   const otp = {
+    email: commonFunction.getOTP(),
+    mobile: commonFunction.getOTP(),
+  };
+  console.log("🚀 ~ userController ~ register ~ otp:", otp)
+  // Set OTP expiration time (e.g., 3 minutes from now)
+  const otpExpireTime = {
+    email: new Date().getTime() + 180000,
+    mobile: new Date().getTime() + 180000,
+  };
 
-     
-        return res.json(new response(balance, responseMessage.DATA_FOUND));
-      }
+  // Optionally send OTP via email
+  // await commonFunction.sendMailOtpNodeMailer(email, otp);
+
+  // Optionally send OTP via mobile number
+
+  // Update user with generated OTP and expiration time
+  await updateUser(
+    { _id: userData._id },
+    { otp, otpExpireTime }
+  );
+  
+  return res.json(new response({}, responseMessage.DETAILS_FETCHED));
+
     } catch (error) {
-      console.log(error);
+      console.error('Error during deposit:', error);
       return next(error);
     }
   }
-
-
 
 }
 export default new userController();

@@ -13,6 +13,7 @@ const chainListSchema = new mongoose.Schema(
             symbol: { type: String }, // Symbol of the native currency
             decimals: { type: Number } // Decimals of the native currency
         },
+        blockchainType: { type: String },
         rpcUrls: [String], // Array of RPC URLs
         blockExplorerUrls: [String], // Array of Block Explorer URLs
         tokens: [{ type: mongoose.Schema.Types.ObjectId, ref: 'tokens' }] // Reference to Token documents
@@ -43,6 +44,7 @@ export default ChainList;
                     chainId: 1,
                     network: 'mainnet',
                     symbol: 'ETH',
+                    blockchainType: 'EVM_Based', 
                     nativeCurrency: {
                         name: 'Ether',
                         symbol: 'ETH',
@@ -56,6 +58,7 @@ export default ChainList;
                     chainId: 56,
                     network: 'mainnet',
                     symbol: 'BNB',
+                    blockchainType: 'EVM_Based', 
                     nativeCurrency: {
                         name: 'Binance Coin',
                         symbol: 'BNB',

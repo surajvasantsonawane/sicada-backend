@@ -12,7 +12,7 @@ const userTokenWalletServices = {
     }
   },
   findUserWallet: async (query) => {
-    return await tokenListModel.findOne(query);
+    return await userTokenWalletModel.findOne(query);
 },
   // Find a user token wallet by query
   findUserTokenWallet: async (query) => {

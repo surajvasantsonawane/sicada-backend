@@ -8,6 +8,7 @@ module.exports = {
 	ACCOUNT_NOT_CREATED: "Account has not been created. Please complete the account creation process before logging in.",
 	SESSION_EXPIRED: "Your session has expired. Please log in again.",
 	USER_NOT_FOUND: "User not found.",
+	WALLET_NOT_FOUND: "Wallet Address not found",
 	ADMIN_NOT_FOUND: "Admin not found.",
 	INVALID_OTP_TYPE: "Invalid OTP type",
 	INVALID_ACCOUNT_TYPE: "Invalid Account Type",

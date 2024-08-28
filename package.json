@@ -39,6 +39,7 @@
     "mysql": "^2.18.1",
     "node-ses": "^3.0.3",
     "nodemailer": "^6.6.3",
+    "qrcode": "^1.5.4",
     "socket.io": "^4.5.2",
     "speakeasy": "^2.0.0",
     "stripe": "^8.154.0",

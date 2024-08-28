@@ -18,10 +18,12 @@ export default Express.Router()
    .put('/editProfile',controller.editProfile)
    .get('/getProfile',controller.getProfile)
    .put('/confirmRegistration',controller.confirmRegistration)
-   .put('/editUserFullProfile',controller.editUserFullProfile)
+   .post('/deposit',controller.deposit)
+   .post('/withdraw',controller.withdraw)
 
    
    .get('/getMyassets',controller.getMyassets)
 
    .use(upload.uploadFile)
    .post('/fileUpload', controller.fileUploadCont)
+   .put('/editUserFullProfile',controller.editUserFullProfile)
