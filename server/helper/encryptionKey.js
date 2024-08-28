@@ -31,15 +31,3 @@ exports.decryptKey = (encryptedData, iv) => {
   decrypted = Buffer.concat([decrypted, decipher.final()]);
   return decrypted.toString();
 }
-
-// const main = (text) => {
-//   const { iv, encryptedData } = encrypt(text);
-//   console.log("IV:", iv);
-//   console.log("Encrypted Data:", encryptedData);
-
-//   const decryptedData = decrypt(encryptedData, iv);
-//   console.log("Decrypted Data:", decryptedData);
-// }
-
-// // Example usage
-// main("my private");

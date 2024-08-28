@@ -6,8 +6,8 @@ const chainListServices = {
         return await chainListModel.create(insertObj);
     },
 
-    findChainList: async (query) => {
-        return await chainListModel.find(query);
+    findChainList: async (query, project) => {
+        return await chainListModel.find(query, project);
     },
 
     findChain: async (query) => {

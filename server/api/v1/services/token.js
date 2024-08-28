@@ -13,9 +13,9 @@ const tokenServices = {
     },
 
     // Find tokens based on a query
-    findTokens: async (query) => {
+    findListTokens: async (query, project = {}) => {
         try {
-            return await tokenList.find(query);
+            return await tokenList.find(query, project);
         } catch (error) {
             // Handle error appropriately
             throw new Error(`Error finding tokens: ${error.message}`);

@@ -22,6 +22,10 @@ export default Express.Router()
    .post('/withdraw',controller.withdraw)
 
    
+   .get('/getTokens',controller.getTokens)
+   .get('/getNetworks',controller.getNetworks)
+   .get('/getDepositeAddress',controller.getDepositeAddress)
+   
    .get('/getMyassets',controller.getMyassets)
 
    .use(upload.uploadFile)
