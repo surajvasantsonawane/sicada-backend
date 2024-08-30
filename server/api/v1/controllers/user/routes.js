@@ -18,14 +18,16 @@ export default Express.Router()
    .put('/editProfile',controller.editProfile)
    .get('/getProfile',controller.getProfile)
    .put('/confirmRegistration',controller.confirmRegistration)
-   .post('/deposit',controller.deposit)
-   .post('/withdraw',controller.withdraw)
+   .post('/buyCryptoInCurrency',controller.buyCryptoInCurrency)
+   .put('/setCryptoLimit',controller.setCryptoLimit)
 
+   
    
    .get('/getTokens',controller.getTokens)
    .get('/getNetworks',controller.getNetworks)
    .get('/getDepositeAddress',controller.getDepositeAddress)
-   
+   .post('/withdrawRequest',controller.withdrawRequest)
+   .get('/getCurrency',controller.getCurrency)
    .get('/getMyassets',controller.getMyassets)
 
    .use(upload.uploadFile)

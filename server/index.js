@@ -4,8 +4,8 @@ import Server from "./common/server";
 const dbUrl = `mongodb://${Config.get("databaseHost")}:${Config.get(
   "databasePort"
 )}/${Config.get("databaseName")}`;
-// const dbUrl = `mongodb://mulsan:mulsan@192.168.0.130:27017/?directConnection=true`
-// const dbUrl = `mongosh "mongodb://mulsan:mulsan@192.168.0.130:27017/?directConnection=true"`
+//const dbUrl = `mongodb://mulsan:mulsan@192.168.0.130:27017/?directConnection=true`
+//const dbUrl = `mongosh "mongodb://mulsan:mulsan@192.168.0.146:27017/?directConnection=true"`
 
 
  

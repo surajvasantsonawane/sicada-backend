@@ -1,6 +1,6 @@
 {
     "port": 3062,
-    "hostAddress": "192.168.0.130",
+    "hostAddress": "192.168.0.146",
     "databasePort": "27017",
     "databaseName": "sicada",
     "websocketAddress":"wss://localhost",

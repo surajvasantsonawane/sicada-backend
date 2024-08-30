@@ -5,6 +5,7 @@ module.exports = {
 	DETAILS_FETCHED: 'Details has been fetched successfully.',
 	EMAIL_EXIST: "Email already exists",
 	MOBILE_EXIST: "Mobile number already exists",
+	CURRENCY_NOT_FOUND: "PLease Enter valid Currency",
 	ACCOUNT_NOT_CREATED: "Account has not been created. Please complete the account creation process before logging in.",
 	SESSION_EXPIRED: "Your session has expired. Please log in again.",
 	USER_NOT_FOUND: "User not found.",

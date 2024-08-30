@@ -39,6 +39,8 @@ const { upsertUserWallet, createUserWallet, updateUserWallet, insertManyUserWall
 import { chainListServices } from "../../services/chain_list";
 const { findChainList, findChain } = chainListServices;
 
+import { currencyServices } from "../../services/currency";
+const { findCurrency, findSingleCurrency } = currencyServices;
 
 import { userTokenWalletServices } from "../../services/user_token_wallet";
 const { createUserTokenWallet, findUserWallet, upsertUserTokenWallet } = userTokenWalletServices;
@@ -50,6 +52,10 @@ const { aggregateTokens, findListTokens, findToken } = tokenServices;
 
 import { depositeWalletServices } from "../../services/deposite_wallet_address";
 const { findDepositWallets } = depositeWalletServices;
+
+import { cryptoTransactionServices } from "../../services/cryptoTransaction";
+const { createCryptoTransactions, updateCryptoTransactions } = cryptoTransactionServices;
+
 
 export class userController {
 
@@ -1306,6 +1312,15 @@ export class userController {
    */
   async getDepositeAddress(req, res, next) {
     try {
+
+      let userData = await findUser({ _id: req.userId, userType: userType.USER });
+      console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
+
+      // Check if the user exists
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
       const network = await findChain({ _id: req.query.networkDocId });
       console.log(network.blockchainType);
 
@@ -1331,6 +1346,7 @@ export class userController {
             privateKey: { iv: IV, key: encryptedData }
           }
         }
+        console.log("🚀 ~ userController ~ getDepositeAddress ~ updateObj:", updateObj)
 
         await upsertUserTokenWallet({ userId: req.userId }, updateObj);
       } else {
@@ -1346,36 +1362,48 @@ export class userController {
   }
 
   /**
-   * @swagger
-   * /user/deposit:
-   *   post:
-   *     tags:
-   *       - USER
-   *     description: deposit
-   *     produces:
-   *       - application/json
-   *     parameters:
-   *       - name: token
-   *         description: token
-   *         in: header
-   *         required: true
-   *       - name: coin
-   *         description: coin
-   *         enum: ["BTC", "USDT"]
-   *         in: query
-   *         required: false
-   *       - name: chain
-   *         description: chain
-   *         enum: ["ERC_20","BEP_20"]
-   *         in: query
-   *         required: false
-   *     responses:
-   *       200:
-   *         description: Returns success message
-   */
-  async deposit(req, res, next) {
+    * @swagger
+    * /user/withdrawRequest:
+    *   post:
+    *     summary: Get tokens
+    *     tags:
+    *       - USER
+    *     description: Get tokens
+    *     produces:
+    *       - application/json
+    *     parameters:
+    *       - name: token
+    *         description: Token for authentication
+    *         in: header
+    *         required: true
+    *       - name: networkType
+    *         description: networkType
+    *         enum: ["mainnet","testnet"]
+    *         in: query
+    *         required: true
+    *       - name: tokenDocId
+    *         description: tokenDocId
+    *         in: query
+    *         required: true
+    *       - name: networkDocId
+    *         description: networkDocId
+    *         in: query
+    *         required: true
+    *       - name: recipientAddress
+    *         description: recipientAddress
+    *         in: query
+    *         required: true
+    *       - name: amount
+    *         description: amount
+    *         in: query
+    *         required: true 
+    *     responses:
+    *       200:
+    *         description: Returns success message with asset details
+    */
+  async withdrawRequest(req, res, next) {
     try {
-      // Find user data
+
       let userData = await findUser({ _id: req.userId, userType: userType.USER });
       console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
 
@@ -1383,95 +1411,10 @@ export class userController {
       if (!userData) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-      const findWalletAddress = {
-        token_address: {
-          EVM_Based: {
-            address: '0xD0434Dc261d56088d5FE84c9037f015E0A35aB4E',
-            privateKey: '860ba09c9e4922da78eef87362b6db28406b06e625da07ca2fcf2fd89778cf8aacc6d4a15e2898124e99c6a59c611c63bd429690e6fb3d82e0c92c00ca7630a16337ce257368d9c2488a2eabac96de85'
-          }
-        },
-        _id: '66cecd9d396f343b177ed2bd',
-        userId: '66cd596473e51d1886c4b75f',
-        createdAt: '2024-08-28T07:11:25.340Z',
-        updatedAt: '2024-08-28T07:11:25.340Z',
-        __v: 0
-      };
 
-      const address = findWalletAddress.token_address.EVM_Based.address;
+      const network = await findChain({ _id: req.query.networkDocId });
+      console.log(network.blockchainType);
 
-      // Generate QR code
-      const qrCodeData = await generateQRCode(address);
-
-      // Return response with QR code data
-      return res.json({
-        success: true,
-        address: address,
-        qrCode: qrCodeData
-      });
-    } catch (error) {
-      console.error('Error during deposit:', error);
-      return next(error);
-    }
-  }
-
-  /**
-     * @swagger
-     * /user/withdraw:
-     *   post:
-     *     tags:
-     *       - USER
-     *     description: withdraw
-     *     produces:
-     *       - application/json
-     *     parameters:
-     *       - name: token
-     *         description: token
-     *         in: header
-     *         required: true
-     *       - name: coin
-     *         description: coin
-     *         enum: ["BTC", "USDT"]
-     *         in: query
-     *         required: true
-     *       - name: chain
-     *         description: chain
-     *         enum: ["ERC_20","BEP_20"]
-     *         in: query
-     *         required: true
-     *       - name: recipientAddress
-     *         description: recipientAddress
-     *         in: query
-     *         required: true
-     *       - name: memo
-     *         description: memo
-     *         in: query
-     *         required: true
-     *       - name: amount
-     *         description: amount
-     *         in: query
-     *         required: true
-     *     responses:
-     *       200:
-     *         description: Returns success message
-     */
-  async withdraw(req, res, next) {
-    // Define the validation schema
-    let validationSchema = Joi.object({
-      coin: Joi.string().required(),
-      chain: Joi.string().required(),
-      recipientAddress: Joi.string().required(),
-      memo: Joi.string().required(),
-      amount: Joi.string().required(),
-    })
-    try {
-      // Find user data
-      let userData = await findUser({ _id: req.userId, userType: userType.USER });
-      console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
-
-      // Check if the user exists
-      if (!userData) {
-        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-      }
       // Generate OTP for email and mobile
       const otp = {
         email: commonFunction.getOTP(),
@@ -1492,16 +1435,221 @@ export class userController {
       // Update user with generated OTP and expiration time
       await updateUser(
         { _id: userData._id },
-        { otp, otpExpireTime }
+        {
+          otp, otpExpireTime, otpVerification: { email: false, mobile: false }
+        }
       );
 
       return res.json(new response({}, responseMessage.DETAILS_FETCHED));
 
+
+
     } catch (error) {
-      console.error('Error during deposit:', error);
+      console.error('Error getting my assets:', error);
       return next(error);
     }
   }
+
+  /**
+    * @swagger
+    * /user/getCurrency:
+    *   get:
+    *     summary: Get tokens
+    *     tags:
+    *       - USER
+    *     description: Get tokens
+    *     produces:
+    *       - application/json
+    *     parameters:
+    *       - name: token
+    *         description: Token for authentication
+    *         in: header
+    *         required: true
+    *     responses:
+    *       200:
+    *         description: Returns success message with asset details
+    */
+
+  async getCurrency(req, res, next) {
+    try {
+      const currencyData = await findCurrency();
+      return res.json(new response(currencyData, responseMessage.GET_DATA));
+    } catch (error) {
+      console.error('Error getting my assets:', error);
+      return next(error);
+    }
+  }
+
+  /**
+    * @swagger
+    * /user/buyCryptoInCurrency:
+    *   post:
+    *     summary: Get tokens
+    *     tags:
+    *       - USER
+    *     description: Get tokens
+    *     produces:
+    *       - application/json
+    *     parameters:
+    *       - name: token
+    *         description: Token for authentication
+    *         in: header
+    *         required: true
+    *       - name: tokenDocId
+    *         description: tokenDocId
+    *         in: query
+    *         required: true
+    *       - name: currencyId
+    *         description: currencyId
+    *         in: query
+    *         required: true
+    *       - name: amount
+    *         description: amount
+    *         in: query
+    *         required: true 
+    *     responses:
+    *       200:
+    *         description: Returns success message with asset details
+    */
+
+  async buyCryptoInCurrency(req, res, next) {
+    const validationSchema = Joi.object({
+      tokenDocId: Joi.string().required(),
+      currencyId: Joi.string().required(),
+      amount: Joi.number().precision(2).required(),  // Allows for decimal values with up to 2 decimal places
+    });
+
+    try {
+      // Validate request body
+      const validationResult = validationSchema.validate(req.query);
+      if (validationResult.error) {
+        throw apiError.badRequest(validationResult.error.details[0].message);
+      }
+
+      // Find user by ID and userType
+      const userData = await findUser({ _id: req.userId, userType: userType.USER });
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
+      const tokenData = await findToken({ _id: req.query.tokenDocId });
+      console.log("🚀 ~ userController ~ buyCryptoInCurrency ~ tokenData:", tokenData)
+      if (!tokenData) {
+        throw apiError.notFound(responseMessage.CURRENCY_NOT_FOUND);
+      }
+
+      // Find currency by ID
+      const currencyData = await findSingleCurrency({ _id: req.query.currencyId });
+      console.log("🚀 ~ userController ~ buyCryptoInCurrency ~ currencyData:", currencyData)
+      if (!currencyData) {
+        throw apiError.notFound(responseMessage.CURRENCY_NOT_FOUND);
+      }
+
+      await createCryptoTransactions({
+        userId: userData._id,
+        currencyId: currencyData._id,
+        tokenDocId: tokenData._id,
+        amount: req.query.amount,
+        coinName: tokenData.symbol,       // Store token symbol as coinName
+        coinLogo: tokenData.logo,         // Store token logo as coinLogo
+        currencyName: currencyData.symbol, // Store currency symbol as currencyName
+        currencyLogo: currencyData.logo    // Store currency logo as currencyLogo
+      });
+
+      // Return a success response
+      return res.json(new response({}, responseMessage.DETAILS_FETCHED));
+
+    } catch (error) {
+      console.error('Error processing buyCryptoInCurrency:', error);
+      return next(error);
+    }
+  }
+
+  /**
+    * @swagger
+    * /user/setCryptoLimit:
+    *   put:
+    *     summary: Get tokens
+    *     tags:
+    *       - USER
+    *     description: Get tokens
+    *     produces:
+    *       - application/json
+    *     parameters:
+    *       - name: token
+    *         description: Token for authentication
+    *         in: header
+    *         required: true
+    *       - name: totalUSDT
+    *         description: totalUSDT
+    *         in: query
+    *         required: true
+    *       - name: minOrderLimit
+    *         description: minOrderLimit
+    *         in: query
+    *         required: true
+    *       - name: maxOrderLimit
+    *         description: maxOrderLimit
+    *         in: query
+    *         required: true 
+    *       - name: paymentMethod
+    *         description: paymentMethod
+    *         enum: ["UPI", "PAYTM", "IMPS", "BANKTRANSFER", "DIGITAL_ERUPEE"]
+    *         in: query
+    *         required: false
+    *       - name: paymentTimeLimit
+    *         description: paymentTimeLimit
+    *         in: query
+    *         required: true   
+    *     responses:
+    *       200:
+    *         description: Returns success message with asset details
+    */
+
+  async setCryptoLimit(req, res, next) {
+    const validationSchema = Joi.object({
+      totalUSDT: Joi.number().required(),
+      paymentMethod: Joi.string().required(),
+      minOrderLimit: Joi.number().precision(2).required(),  // Allows for decimal values with up to 2 decimal places
+      maxOrderLimit: Joi.number().precision(2).required(),  // Allows for decimal values with up to 2 decimal places
+      paymentTimeLimit: Joi.number().required(),  // Time limit should be an integer, so precision is not necessary
+    });
+
+    try {
+      // Validate request body
+      const validationResult = validationSchema.validate(req.query); // Validating req.query, not req.body
+      if (validationResult.error) {
+        throw apiError.badRequest(validationResult.error.details[0].message);
+      }
+
+      // Find user by ID and userType
+      const userData = await findUser({ _id: req.userId, userType: userType.USER });
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
+      // Update crypto transaction limits
+      const data = await updateCryptoTransactions({ userId: userData._id, }, {
+        $set: {
+          totalUSDT: req.query.totalUSDT,
+          paymentMethod: req.query.paymentMethod,
+          minOrderLimit: req.query.minOrderLimit,
+          maxOrderLimit: req.query.maxOrderLimit,
+          paymentTimeLimit: req.query.paymentTimeLimit,
+        }
+      });
+      console.log(data, 103);  // Logging data
+
+      // Return a success response
+      return res.json(new response({}, responseMessage.GET_DATA));
+
+    } catch (error) {
+      console.error('Error processing setCryptoLimit:', error);
+      return next(error);
+    }
+  }
+
+
 
 }
 export default new userController();
