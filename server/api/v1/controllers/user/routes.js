@@ -11,6 +11,9 @@ export default Express.Router()
    .post('/resendotp/:userId', controller.resendOTP)
    .post('/verifySingleOTP/:userId', controller.verifySingleOTP)
    .post('/login', controller.login)
+   .get('/getTokens',controller.getTokens)
+   .get('/getNetworks',controller.getNetworks)
+   .get('/getCurrency',controller.getCurrency)
 
  
    
@@ -20,14 +23,16 @@ export default Express.Router()
    .put('/confirmRegistration',controller.confirmRegistration)
    .post('/buyCryptoInCurrency',controller.buyCryptoInCurrency)
    .put('/setCryptoLimit',controller.setCryptoLimit)
+   .put('/setBuyCryptoRemark',controller.setBuyCryptoRemark)
+   .post('/sellCryptoInCurrency',controller.sellCryptoInCurrency)
+   .put('/setSellCryptoLimit',controller.setSellCryptoLimit)
+   .put('/setSellCryptoRemark',controller.setSellCryptoRemark)
+   .get('/getSellingOrders',controller.getSellingOrders)
 
    
    
-   .get('/getTokens',controller.getTokens)
-   .get('/getNetworks',controller.getNetworks)
    .get('/getDepositeAddress',controller.getDepositeAddress)
    .post('/withdrawRequest',controller.withdrawRequest)
-   .get('/getCurrency',controller.getCurrency)
    .get('/getMyassets',controller.getMyassets)
 
    .use(upload.uploadFile)

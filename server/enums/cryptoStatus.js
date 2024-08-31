@@ -1,0 +1,4 @@
+module.exports = Object.freeze({
+    ONLINE_RIGHT_NOW: 'ONLINE_RIGHT_NOW',
+    OFFLINE_MANUALLY_LATER: 'OFFLINE_MANUALLY_LATER'
+})

@@ -1,4 +1,20 @@
 definitions:
+
+  placeOrder:
+    required:
+      - nodeId
+      - paymentMethod
+    properties:
+      nodeId:
+        type: string
+      paymentMethod:
+        type: array
+        items:
+          type: string
+    example:
+      nodeId: "5f7b3b3b7b3b3b3b3b3b3b3b"
+      paymentMethod: ["BTC", "ETH"]
+
   securitySchemes:
     tokenauth:
       type: basic
