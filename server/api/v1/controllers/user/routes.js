@@ -17,23 +17,16 @@ export default Express.Router()
 
  
    
-   .use(auth.verifyToken)
+   // .use(auth.verifyToken)
    .put('/editProfile',controller.editProfile)
    .get('/getProfile',controller.getProfile)
    .put('/confirmRegistration',controller.confirmRegistration)
-   .post('/buyCryptoInCurrency',controller.buyCryptoInCurrency)
-   .put('/setCryptoLimit',controller.setCryptoLimit)
-   .put('/setBuyCryptoRemark',controller.setBuyCryptoRemark)
-   .post('/sellCryptoInCurrency',controller.sellCryptoInCurrency)
-   .put('/setSellCryptoLimit',controller.setSellCryptoLimit)
-   .put('/setSellCryptoRemark',controller.setSellCryptoRemark)
-   .get('/getSellingOrders',controller.getSellingOrders)
-
-   
-   
    .get('/getDepositeAddress',controller.getDepositeAddress)
    .post('/withdrawRequest',controller.withdrawRequest)
    .get('/getMyassets',controller.getMyassets)
+   .put('/setValueLimit',controller.setValueLimit)
+
+   
 
    .use(upload.uploadFile)
    .post('/fileUpload', controller.fileUploadCont)

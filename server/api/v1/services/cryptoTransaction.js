@@ -9,7 +9,9 @@ const cryptoTransactionServices = {
     findCryptoTransactions: async (query, project) => {
         return await cryptoTransactionSchema.find(query, project);
     },
-
+    findCryptoTransactionsPopulateUser: async (query, project) => {
+        return await cryptoTransactionSchema.find(query, project).populate("userId", "name");
+    },
     findSingleCryptoTransactions: async (query) => {
         return await cryptoTransactionSchema.findOne(query);
     },

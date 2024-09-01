@@ -1,20 +1,4 @@
 definitions:
-
-  placeOrder:
-    required:
-      - nodeId
-      - paymentMethod
-    properties:
-      nodeId:
-        type: string
-      paymentMethod:
-        type: array
-        items:
-          type: string
-    example:
-      nodeId: "5f7b3b3b7b3b3b3b3b3b3b3b"
-      paymentMethod: ["BTC", "ETH"]
-
   securitySchemes:
     tokenauth:
       type: basic
@@ -23,6 +7,77 @@ definitions:
       in: header
     demouser:
       type: basic
+
+  userPlaceOrder:
+    properties:
+      transactionType:
+        type: string
+      tokenDocId:
+        type: string
+      currencyId:
+        type: string
+      amount:
+        type: number
+      totalUSDT:
+        type: number
+      minOrderLimit:
+        type: number
+      maxOrderLimit:
+        type: number
+      paymentMethod:
+        type: array
+        items:
+          type: string      
+      paymentTimeLimit:
+        type: number
+      tags:
+        type: array
+        items:
+          type: string      
+      remarks:
+        type: string
+      auto_reply:
+        type: string
+      regions:
+        type: array
+        items:
+          type: string      
+      registered:
+        type: number
+      holdings_More_Than:
+        type: number
+      cryptoStatus:
+        type: array
+        items:
+          type: string       
+    example:
+      transactionType: "BUY"
+      tokenDocId: ""
+      currencyId: ""
+      amount: 0
+      totalUSDT: 0
+      minOrderLimit: 0
+      maxOrderLimit: 0
+      paymentMethod: ["UPI", "PAYTM", "IMPS", "BANKTRANSFER", "DIGITAL_ERUPEE"] 
+      paymentTimeLimit: 0
+      tags:  ["BANK_STATEMENT_REQUIRED", "EXTRA_KYC_REQUIRED", "NO_ADDITIONAL_VERIFICATION_NEEDED", "NO_PAYMENT_RECEIPT_NEEDED", "PAN_REQUIRED","PAYMENT_RECEIPT_REQUIRED","PAYMENT_GATEWAY_PAYOUT","PHOTO_ID_REQUIRED","TDS_APPLIED" ]
+      remarks: ""
+      auto_reply: ""
+      regions: ["INDIA", "UNITED_ARABS", "AUSTRALIA"]
+      registered: 0
+      holdings_More_Than: 0
+      cryptoStatus: ["ONLINE_RIGHT_NOW", "OFFLINE_MANUALLY_LATER"]
+
+  setValueLimit:
+    properties:
+      minBuyValue:
+        type: number
+      maxBuyValue:
+        type: number 
+      minSellValue:
+        type: number
+      maxSellValue:
+        type: number    
 
   register:
     required:
