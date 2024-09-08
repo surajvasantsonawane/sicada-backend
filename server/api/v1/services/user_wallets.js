@@ -7,7 +7,7 @@ const userWalletServices = {
     return await userWalletModel.create(insertObj);
   },
  
-  findUserWallet: async (query) => {
+  findOneUserWallet: async (query) => {
     return await userWalletModel.findOne(query);
   },
 

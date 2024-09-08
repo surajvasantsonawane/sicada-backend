@@ -9,6 +9,7 @@ import responseMessage from "../../../../../assets/responseMessage";
 import commonFunction from "../../../../helper/util";
 import status from "../../../../enums/status";
 import userType from "../../../../enums/userType";
+import ethersFunction from "../../../../helper/ethers";
 import cryptoFunction from "../../../../helper/encryptionKey";
 import walletFunction from "../../../../helper/wallet";
 
@@ -53,7 +54,7 @@ import { countriesListServices } from "../../services/countries";
 const { findCountriesList } = countriesListServices;
 
 import { userWalletServices } from "../../services/user_wallets";
-const { upsertUserWallet, createUserWallet, updateUserWallet, insertManyUserWallet } = userWalletServices;
+const { upsertUserWallet, createUserWallet, updateUserWallet, insertManyUserWallet, findOneUserWallet } = userWalletServices;
 
 import { chainListServices } from "../../services/chain_list";
 const { findChainList, findChain } = chainListServices;
@@ -71,6 +72,7 @@ import { depositeWalletServices } from "../../services/deposite_wallet_address";
 const { findDepositWallets } = depositeWalletServices;
 
 import { cryptoTransactionServices } from "../../services/cryptoTransaction";
+import mongoose from "mongoose";
 const { createCryptoTransactions, findCryptoTransactions, updateCryptoTransactions } = cryptoTransactionServices;
 
 export class userController {
@@ -1166,26 +1168,26 @@ export class userController {
     try {
       // Find user data
       let userData = await findUser({ _id: req.userId, userType: userType.USER });
-      console.log("🚀 ~ userController ~ getMyassets ~ userData:", userData);
-
+  
       // Check if the user exists
       if (!userData) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-
+  
       // Check if the user already has an EVM-based address
       const userTokenWallet = await findUserWallet({ userId: req.userId });
-
+      const userWallet = await findOneUserWallet({ userId: req.userId });
+  
       if (!userTokenWallet || !userTokenWallet.token_address || !userTokenWallet.token_address.EVM_Based) {
         // Generate a new wallet only if the user doesn't have an EVM-based address
         const wallet = ethers.Wallet.createRandom();
         const private_key = wallet.privateKey;
         const address = wallet.address;
-
+  
         // Encrypt the private key
         const IV = cryptoFunction.getIV();
         const { iv, encryptedData } = cryptoFunction.encryptKey(private_key, IV);
-
+  
         // Create the new user token wallet with the generated address and encrypted private key
         await createUserTokenWallet({
           userId: req.userId,
@@ -1197,69 +1199,27 @@ export class userController {
           }
         });
       }
-
-      // Define the aggregation pipeline
-      const pipeline = [
-        {
-          $lookup: {
-            from: "tokensContractAddress",
-            localField: "chainId",
-            foreignField: "chainId",
-            as: "result"
-          }
-        },
-        {
-          $lookup: {
-            from: "user_wallet",
-            localField: "66cd596473e51d1886c4b75f",
-            foreignField: "address",
-            as: "balance"
-          }
-        },
-        {
-          $unwind: "$balance"
-        },
-        {
-          $project: {
-            chainId: 1,
-            id: 1,
-            name: 1,
-            symbol: 1,
-            logo: 1,
-            "result.standard": 1,
-            "result.contractAddress": 1,
-            "result.chainId": 1,
-            "result.decimal": 1,
-            "balance.balance": 1
-          }
-        }
-      ];
-
-      // Aggregate tokens
-      let list = await aggregateTokens(pipeline);
-      console.log("🚀 ~ userController ~ getMyassets ~ list:", list);
-
-      // Convert balance to dollars and store it in a new key
-      if (list && list.length > 0 && list[0].balance && list[0].balance.balance) {
-        const originalBalance = list[0].balance.balance;
-        const convertedBalance = convertUSDToDollars(originalBalance);
-
-        // Store the converted balance in a new key
-        list[0].balance.convertedBalance = convertedBalance;
-      }
-
-      // Combine user data with the token list
+  
+      // Assuming USDT to USD is 1:1, but if dynamic, use an external API or Web3
+      let usdtToUsdRate = await ethersFunction.getConversionPrice('tether', 'usd'); // Typically USDT is pegged 1:1 to USD
+  
+      // Convert USDT balance to USD
+      const balanceInUSDT = userWallet ? userWallet.balance : 0;
+      const balanceInUSD = balanceInUSDT * usdtToUsdRate; // Conversion logic
+  
+      // Combine user data with the token list and add USD field
       const responseData = {
-        user: {
-          name: userData.name,
-          email: userData.email,
-          availableBalance: 180.0004222,
-          pendingTransaction: 20.0000,
-          finalConfirmation: userData.finalConfirmation,
-        },
-        tokens: list
+        name: userData.name,
+        email: userData.email,
+        availableBalance: 180.0004222, // Example static data
+        pendingTransaction: 20.0000,   // Example static data
+        finalConfirmation: userData.finalConfirmation,
+        balance: balanceInUSDT,
+        symbol: "USDT",
+        convertedBalance: balanceInUSD ? balanceInUSD : 0, // New USD field with converted value
+        usdtToUsdRate: usdtToUsdRate
       };
-
+  
       // Return the combined data
       return res.json(new response(responseData, responseMessage.GET_DATA));
     } catch (error) {
@@ -1267,6 +1227,7 @@ export class userController {
       return next(error);
     }
   }
+  
 
   /**
    * @swagger
@@ -1584,31 +1545,31 @@ export class userController {
     }
   }
 
- /**
-     * @swagger
-     * /user/getCountriesList:
-     *   get:
-     *     summary: Get tokens
-     *     tags:
-     *       - USER
-     *     description: Get tokens
-     *     produces:
-     *       - application/json
-     *     responses:
-     *       200:
-     *         description: Returns success message with asset details
-     */
+  /**
+      * @swagger
+      * /user/getCountriesList:
+      *   get:
+      *     summary: Get tokens
+      *     tags:
+      *       - USER
+      *     description: Get tokens
+      *     produces:
+      *       - application/json
+      *     responses:
+      *       200:
+      *         description: Returns success message with asset details
+      */
 
- async getCountriesList(req, res, next) {
-  try {
-    let countryData = await findCountriesList();
+  async getCountriesList(req, res, next) {
+    try {
+      let countryData = await findCountriesList();
 
-    return res.json(new response(countryData, responseMessage.GET_DATA));
-  } catch (error) {
-    console.error('Error getting order list:', error);
-    return next(error);
+      return res.json(new response(countryData, responseMessage.GET_DATA));
+    } catch (error) {
+      console.error('Error getting order list:', error);
+      return next(error);
+    }
   }
-}
 
   // /**
   //  * @swagger

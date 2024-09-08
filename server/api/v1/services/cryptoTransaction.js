@@ -23,6 +23,10 @@ const cryptoTransactionServices = {
     upsertCryptoTransactions: async (query, updateObj) => {
         return await cryptoTransactionSchema.findOneAndUpdate(query, updateObj, { new: true, upsert: true });
     },
+
+    cryptoTransactionAggregate: async (pipeline) => {
+        return await cryptoTransactionSchema.aggregate(pipeline);
+    }
 };
 
 module.exports = { cryptoTransactionServices };

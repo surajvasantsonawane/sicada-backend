@@ -20,7 +20,7 @@ const { aggregateTokens, findListTokens, findToken } = tokenServices;
 
 
 import { bankDetailsServices } from "../../services/bankDetails";
-const {findBankDetails} = bankDetailsServices;
+const { findBankDetails } = bankDetailsServices;
 
 import { paymentTransactionServices } from "../../services/paymentTransaction";
 const { createPaymentTransaction, findPaymentTransaction, findSinglePayment } = paymentTransactionServices;
@@ -29,7 +29,7 @@ import { currencyServices } from "../../services/currency";
 const { findCurrency, findSingleCurrency } = currencyServices;
 
 import { cryptoTransactionServices } from "../../services/cryptoTransaction";
-const { createCryptoTransactions, findCryptoTransactions,findSingleCryptoTransactions, findCryptoTransactionsPopulateUser, updateCryptoTransactions } = cryptoTransactionServices;
+const { createCryptoTransactions, findCryptoTransactions, findSingleCryptoTransactions, findCryptoTransactionsPopulateUser, updateCryptoTransactions, cryptoTransactionAggregate } = cryptoTransactionServices;
 
 import { setValueServices } from "../../services/setValue";
 const { findAllValues } = setValueServices;
@@ -211,11 +211,18 @@ export class placeOrderController {
      *         description: paymentMethod
      *         in: query
      *         required: false
+     *       - name: page
+     *         description: page
+     *         in: query
+     *         required: false
+     *       - name: limit
+     *         description: limit
+     *         in: query
+     *         required: false
      *     responses:
      *       200:
      *         description: Returns success message with asset details
      */
-
   async getOrderList(req, res, next) {
     try {
       // Define the validation schema for query parameters
@@ -223,12 +230,16 @@ export class placeOrderController {
         transactionType: Joi.string().valid('BUY', 'SELL').optional(),
         amount: Joi.number().optional(),
         paymentMethod: Joi.array().items(
-          Joi.string().valid('UPI','BANKTRANSFER')
-        ).optional()
+          Joi.string().valid('UPI', 'BANKTRANSFER')
+        ).optional(),
+        page: Joi.number().integer().min(1).optional().default(1),   // Pagination: page number
+        limit: Joi.number().integer().min(1).optional().default(10), // Pagination: limit per page
       });
+
       if (req.query.paymentMethod) {
-        req.query.paymentMethod = JSON.parse(req.query.paymentMethod)
+        req.query.paymentMethod = JSON.parse(req.query.paymentMethod);
       }
+
       // Validate the query parameters
       const { error, value } = validationSchema.validate(req.query);
       if (error) {
@@ -236,12 +247,10 @@ export class placeOrderController {
       }
 
       // Extract validated query parameters
-      const {
-        transactionType, amount, paymentMethod
-      } = value;
+      const { transactionType, amount, paymentMethod, page, limit } = value;
 
       // Construct the filter object based on provided query parameters
-      const filter = {};
+      const filter = { userId: { $ne: req.userId } };
 
       if (transactionType) {
         // Show opposite transaction type data
@@ -253,13 +262,17 @@ export class placeOrderController {
       }
 
       if (paymentMethod && paymentMethod.length > 0) {
-        // Validate each paymentMethod value
         const validPaymentMethods = ['UPI', 'BANKTRANSFER'];
         const filteredPaymentMethods = paymentMethod.filter(method => validPaymentMethods.includes(method));
 
         if (filteredPaymentMethods.length === 0) {
-          // If no valid payment methods, return an empty array
-          return res.json(new response([], responseMessage.NO_VALID_PAYMENT_METHOD));
+          return res.json(new response({
+            data: [],
+            totalpages: 0,
+            page: page,
+            limit: limit,
+            currentpage: page
+          }, responseMessage.NO_VALID_PAYMENT_METHOD));
         }
 
         filter.paymentMethod = { $in: filteredPaymentMethods };
@@ -267,38 +280,86 @@ export class placeOrderController {
 
       // Find user by ID and userType
       const userData = await findUser({ _id: req.userId, userType: userType.USER });
-  //    console.log("🚀 ~ placeOrderController ~ getOrderList ~ userData:", userData)
       if (!userData) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-      let currencyData = await findCryptoTransactionsPopulateUser(filter);
-      console.log("🚀 ~ placeOrderController ~ getOrderList ~ userData:", currencyData)
+
+      // Get the total count of matching transactions
+      const totalDocuments = await cryptoTransactionAggregate([
+        { $match: filter },
+        { $count: 'total' }  // Get the count of matching documents
+      ]);
+
+      const totalRecords = totalDocuments.length > 0 ? totalDocuments[0].total : 0;
+      const totalPages = Math.ceil(totalRecords / limit);
+      const skip = (page - 1) * limit;
+
+      // Retrieve data with pagination
+      const pipeline = [
+        { $match: filter },
+        { $skip: skip },       // Skip documents for pagination
+        { $limit: limit },     // Limit the number of documents per page
+        {
+          $lookup: {
+            from: 'user',            // Assuming user information is in the "users" collection
+            localField: 'userId',
+            foreignField: '_id',
+            as: 'userId'
+          }
+        },
+        { $unwind: "$userId" }, // Flatten the userId array
+        {
+          $project: {
+            _id: 1,
+            userId: 1,
+            order: 1,
+            completionRate: 1,
+            transactionType: 1,
+            paymentTimeLimit: 1,
+            amount: 1,
+            totalUSDT: 1,
+            paymentMethod: 1
+          }
+        }
+      ];
+      console.log("pipeline: ", JSON.stringify(pipeline));
+      
+      let currencyData = await cryptoTransactionAggregate(pipeline);
 
       // Exclude transactions where the userId matches the current user's ID
       currencyData = currencyData.filter(transaction =>
         transaction.userId._id.toString() !== userData._id.toString()
       );
-  // Process the data to include only required fields
-  const responseData = currencyData.map(transaction => ({
-    _id: transaction._id,
-    finalConfirmation: userData.finalConfirmation,
-    userId: transaction.userId, 
-    name: transaction.userId.name,
-    order: transaction.order,
-    completionRate: transaction.completionRate,
-    transactionType: transaction.transactionType,
-    paymentTimeLimit: transaction.paymentTimeLimit,
-    amount: transaction.amount,
-    totalUSDT: transaction.totalUSDT,
-    paymentMethod: transaction.paymentMethod
-  }));
 
-      return res.json(new response(responseData, responseMessage.GET_DATA));
+      // Process the data to include only required fields
+      const responseData = currencyData.map(transaction => ({
+        _id: transaction._id,
+        finalConfirmation: userData.finalConfirmation,
+        userId: transaction.userId,
+        name: transaction.userId.name,
+        order: transaction.order,
+        completionRate: transaction.completionRate,
+        transactionType: transaction.transactionType,
+        paymentTimeLimit: transaction.paymentTimeLimit,
+        amount: transaction.amount,
+        totalUSDT: transaction.totalUSDT,
+        paymentMethod: transaction.paymentMethod
+      }));
+
+      // Send the response with paginated data
+      return res.json({
+        data: responseData,
+        totalpages: totalPages,
+        page: page,
+        limit: limit,
+        currentpage: page
+      });
     } catch (error) {
       console.error('Error getting order list:', error);
       return next(error);
     }
   }
+
 
   /**
      * @swagger
@@ -329,30 +390,30 @@ export class placeOrderController {
       const validationSchema = Joi.object({
         transactionId: Joi.string().required(),
       });
-  
+
       const { error, value } = validationSchema.validate(req.query);
       if (error) {
         throw apiError.badRequest(error.details[0].message);
       }
-  
+
       const { transactionId } = value;
-  
+
       const userData = await findUser({ _id: req.userId, userType: userType.USER });
       if (!userData) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-  
+
       // Retrieve the transaction by ID and populate user data
       const userResponse = await findCryptoTransactionsPopulateUser({ _id: transactionId });
-  
+
       // Log the raw userResponse to inspect what is being returned
       console.log("🚀 ~ getOrderById ~ userResponse:", userResponse);
-  
+
       // Check if userResponse is valid
       if (!userResponse) {
         throw apiError.notFound(responseMessage.NO_TRANSACTIONS_FOUND);
       }
-  
+
       const responseData = userResponse.map(transaction => ({
         _id: transaction._id,
         userId: transaction.userId,
@@ -365,175 +426,175 @@ export class placeOrderController {
         totalUSDT: transaction.totalUSDT,
         paymentMethod: transaction.paymentMethod
       }));
-  
+
       return res.json(new response(responseData, responseMessage.GET_DATA));
     } catch (error) {
       console.error('Error getting order by ID:', error);
       return next(error);
     }
   }
-  
-/**
- * @swagger
- * /placeOrder/buyOrSell:
- *   post:
- *     summary: Place an order
- *     tags:
- *       - PLACE_ORDER
- *     description: Submit an order request with various parameters.
- *     produces:
- *       - application/json
- *     parameters:
- *       - name: token
- *         description: Token for authentication
- *         in: header
- *         required: true
- *       - name: buyOrSell
- *         description: buyOrSell
- *         in: body
- *         required: true
- *         schema:
- *           $ref: '#/definitions/buyOrSell'
- *     responses:
- *       200:
- *         description: Returns success message with asset details
- */
 
-async buyOrSell(req, res, next) {
-  const { v4: uuidv4 } = require('uuid'); // Import uuid for generating unique IDs
-  const validationSchema = Joi.object({
-    transactionId: Joi.string().required(),
-    paymentMethod: Joi.string().required(),
-    fiatAmount : Joi.number().required(),
-receiveQuantity:  Joi.number().required(),
-  });
+  /**
+   * @swagger
+   * /placeOrder/buyOrSell:
+   *   post:
+   *     summary: Place an order
+   *     tags:
+   *       - PLACE_ORDER
+   *     description: Submit an order request with various parameters.
+   *     produces:
+   *       - application/json
+   *     parameters:
+   *       - name: token
+   *         description: Token for authentication
+   *         in: header
+   *         required: true
+   *       - name: buyOrSell
+   *         description: buyOrSell
+   *         in: body
+   *         required: true
+   *         schema:
+   *           $ref: '#/definitions/buyOrSell'
+   *     responses:
+   *       200:
+   *         description: Returns success message with asset details
+   */
 
-  try {
-    // Validate request body
-    const { error, value } = validationSchema.validate(req.body);
-    if (error) {
-      throw apiError.badRequest(error.details[0].message);
-    }
+  async buyOrSell(req, res, next) {
+    const { v4: uuidv4 } = require('uuid'); // Import uuid for generating unique IDs
+    const validationSchema = Joi.object({
+      transactionId: Joi.string().required(),
+      paymentMethod: Joi.string().required(),
+      fiatAmount: Joi.number().required(),
+      receiveQuantity: Joi.number().required(),
+    });
 
-    const { transactionId, paymentMethod, fiatAmount,  receiveQuantity } = value;
+    try {
+      // Validate request body
+      const { error, value } = validationSchema.validate(req.body);
+      if (error) {
+        throw apiError.badRequest(error.details[0].message);
+      }
 
-    // Find user by ID and userType
-    const userData = await findUser({ _id: req.userId, userType: userType.USER });
-    if (!userData) {
-      throw apiError.notFound(responseMessage.USER_NOT_FOUND);
-    }
+      const { transactionId, paymentMethod, fiatAmount, receiveQuantity } = value;
 
-    // Retrieve the transaction by ID and populate user data
-    const userResponse = await findCryptoTransactionsPopulateUser({ _id: transactionId });
-    console.log("🚀 ~ placeOrderController ~ buyOrSell ~ userResponse:", userResponse);
+      // Find user by ID and userType
+      const userData = await findUser({ _id: req.userId, userType: userType.USER });
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
 
-    if (!userResponse || userResponse.length === 0) {
-      throw apiError.notFound(responseMessage.NO_TRANSACTIONS_FOUND);
-    }
+      // Retrieve the transaction by ID and populate user data
+      const userResponse = await findCryptoTransactionsPopulateUser({ _id: transactionId });
+      console.log("🚀 ~ placeOrderController ~ buyOrSell ~ userResponse:", userResponse);
 
-    const transaction = userResponse[0]; // Assuming you get a single transaction or the first one
+      if (!userResponse || userResponse.length === 0) {
+        throw apiError.notFound(responseMessage.NO_TRANSACTIONS_FOUND);
+      }
 
-    // Extract userId from userResponse
-    const userIdFromTransaction = transaction.userId._id.toString();
+      const transaction = userResponse[0]; // Assuming you get a single transaction or the first one
 
-    // Fetch the bank details using findBankDetails function
-    const bankDetails = await findBankDetails({ userId: userIdFromTransaction });
+      // Extract userId from userResponse
+      const userIdFromTransaction = transaction.userId._id.toString();
 
-    // Ensure that the result from findBankDetails is an array before filtering
-    const matchedBankDetails = Array.isArray(bankDetails) 
-      ? bankDetails.filter(bankDetail => bankDetail.userId.toString() === userIdFromTransaction)
-      : [];
+      // Fetch the bank details using findBankDetails function
+      const bankDetails = await findBankDetails({ userId: userIdFromTransaction });
 
-    // Check if the provided paymentMethod matches one in the transaction's paymentMethod array
-    const isPaymentMethodMatched = transaction.paymentMethod.includes(paymentMethod);
+      // Ensure that the result from findBankDetails is an array before filtering
+      const matchedBankDetails = Array.isArray(bankDetails)
+        ? bankDetails.filter(bankDetail => bankDetail.userId.toString() === userIdFromTransaction)
+        : [];
 
-    if (!isPaymentMethodMatched) {
-      throw apiError.badRequest(`The provided payment method '${paymentMethod}' does not match any available payment methods for this transaction.`);
-    }
+      // Check if the provided paymentMethod matches one in the transaction's paymentMethod array
+      const isPaymentMethodMatched = transaction.paymentMethod.includes(paymentMethod);
 
-    // Generate a unique ID using uuid
-    const uniqueId = uuidv4();
+      if (!isPaymentMethodMatched) {
+        throw apiError.badRequest(`The provided payment method '${paymentMethod}' does not match any available payment methods for this transaction.`);
+      }
 
-     await createOrderList({
-      senderUserId: userData._id,
-      receiverUserId: transaction.userId._id,
-      paymentTimeLimit: transaction.paymentTimeLimit, // Add payment time limit from the transaction
-      transactionType: transaction.transactionType,
-      orderNumber: uniqueId,
+      // Generate a unique ID using uuid
+      const uniqueId = uuidv4();
+
+      await createOrderList({
+        senderUserId: userData._id,
+        receiverUserId: transaction.userId._id,
+        paymentTimeLimit: transaction.paymentTimeLimit, // Add payment time limit from the transaction
+        transactionType: transaction.transactionType,
+        orderNumber: uniqueId,
         fiatAmount: fiatAmount, // Static fiatAmount value as requested
         price: transaction.amount, // Use the transaction amount as the price
         receiveQuantity: receiveQuantity, // Static receiveQuantity value as requested
       });
-    // Add the unique ID and matched bank details to the response data
-    const responseData = {
-      senderUserId: userData._id,
-      receiverUserId: transaction.userId._id,
-      transactionType: transaction.transactionType,
-      paymentTimeLimit: transaction.paymentTimeLimit, // Add payment time limit from the transaction
-      orderNumber: uniqueId,
-      fiatAmount: fiatAmount, // Static fiatAmount value as requested
-      price: transaction.amount, // Use the transaction amount as the price
-      receiveQuantity: receiveQuantity, // Static receiveQuantity value as requested
-      bankDetails: matchedBankDetails, // Add the matched bank details to the response
-    };
+      // Add the unique ID and matched bank details to the response data
+      const responseData = {
+        senderUserId: userData._id,
+        receiverUserId: transaction.userId._id,
+        transactionType: transaction.transactionType,
+        paymentTimeLimit: transaction.paymentTimeLimit, // Add payment time limit from the transaction
+        orderNumber: uniqueId,
+        fiatAmount: fiatAmount, // Static fiatAmount value as requested
+        price: transaction.amount, // Use the transaction amount as the price
+        receiveQuantity: receiveQuantity, // Static receiveQuantity value as requested
+        bankDetails: matchedBankDetails, // Add the matched bank details to the response
+      };
 
-    // Return the response data if the payment method matches
-    return res.json(new response(responseData, responseMessage.DETAILS_FETCHED));
+      // Return the response data if the payment method matches
+      return res.json(new response(responseData, responseMessage.DETAILS_FETCHED));
 
-  } catch (error) {
-    console.error('Error processing buyOrSell:', error);
-    return next(error);
-  }
-}
-
-    /**
-     * @swagger
-     * /placeOrder/addPaymentMethod:
-     *   post:
-     *     summary: Get tokens
-     *     tags:
-     *       - PLACE_ORDER
-     *     description: Get tokens
-     *     produces:
-     *       - application/json
-     *     parameters:
-     *       - name: token
-     *         description: Token for authentication
-     *         in: header
-     *         required: true
-     *       - name: addPaymentMethod
-     *         description: addPaymentMethod
-     *         in: body
-     *         required: true
-     *         schema:
-     *           $ref: '#/definitions/addPaymentMethod'
-     *     responses:
-     *       200:
-     *         description: Returns success message with asset details
-     */
-
- async addPaymentMethod(req, res, next) {
-  const validationSchema = Joi.object({
-    transactionId: Joi.string().required(),
-    paymentMethod: Joi.string().required(),
-
-  });
-  try {
-    const userData = await findUser({ _id: req.userId, userType: userType.USER });
-    if (!userData) {
-      throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+    } catch (error) {
+      console.error('Error processing buyOrSell:', error);
+      return next(error);
     }
-
-   const allTransactionData = await findCryptoTransactions({transactionId: req.transactionId});
-   console.log("🚀 ~ placeOrderController ~ addPaymentMethod ~ allTransactionData:", allTransactionData)
-
-    // Send the response with the extracted paymentMethod
-    return res.json(new response(allTransactionData, responseMessage.GET_DATA));
-  } catch (error) {
-    console.error('Error getting payment method:', error);
-    return next(error);
   }
-}
+
+  /**
+   * @swagger
+   * /placeOrder/addPaymentMethod:
+   *   post:
+   *     summary: Get tokens
+   *     tags:
+   *       - PLACE_ORDER
+   *     description: Get tokens
+   *     produces:
+   *       - application/json
+   *     parameters:
+   *       - name: token
+   *         description: Token for authentication
+   *         in: header
+   *         required: true
+   *       - name: addPaymentMethod
+   *         description: addPaymentMethod
+   *         in: body
+   *         required: true
+   *         schema:
+   *           $ref: '#/definitions/addPaymentMethod'
+   *     responses:
+   *       200:
+   *         description: Returns success message with asset details
+   */
+
+  async addPaymentMethod(req, res, next) {
+    const validationSchema = Joi.object({
+      transactionId: Joi.string().required(),
+      paymentMethod: Joi.string().required(),
+
+    });
+    try {
+      const userData = await findUser({ _id: req.userId, userType: userType.USER });
+      if (!userData) {
+        throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+      }
+
+      const allTransactionData = await findCryptoTransactions({ transactionId: req.transactionId });
+      console.log("🚀 ~ placeOrderController ~ addPaymentMethod ~ allTransactionData:", allTransactionData)
+
+      // Send the response with the extracted paymentMethod
+      return res.json(new response(allTransactionData, responseMessage.GET_DATA));
+    } catch (error) {
+      console.error('Error getting payment method:', error);
+      return next(error);
+    }
+  }
 
 
 

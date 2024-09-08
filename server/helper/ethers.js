@@ -28,7 +28,7 @@ exports.getBalance = async (network, address, contractAddress) => {
  * @param {string} vs_currencies - The currency to compare against (e.g., 'usd').
  * @returns {Promise<number>} The current price of USDT in USD.
  */
-exports.getUSDTPrice = async (ids, vs_currencies) => {
+exports.getConversionPrice = async (ids, vs_currencies) => {
     try {
         const response = await axios.get(`https://api.coingecko.com/api/v3/simple/price?ids=${ids}&vs_currencies=${vs_currencies}`);
         return response.data[ids][vs_currencies]; // Dynamic access based on IDs and vs_currencies
