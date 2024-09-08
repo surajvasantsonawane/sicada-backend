@@ -1,9 +1,8 @@
-import ChainList from './chainList';
-import status from "../enums/status";
 
 import mongoose from 'mongoose';
 import mongoosePaginate from "mongoose-paginate";
 import mongooseAggregatePaginate from "mongoose-aggregate-paginate";
+import status from "../enums/status";
 
 const currencySchema = new mongoose.Schema(
     {

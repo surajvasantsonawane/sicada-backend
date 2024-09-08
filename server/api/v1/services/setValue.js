@@ -6,7 +6,7 @@ const setValueServices = {
         return await setValueSchema.create(insertObj);
     },
 
-    findCurrency: async (query, project) => {
+    findAllValues: async (query, project) => {
         return await setValueSchema.find(query, project);
     },
 

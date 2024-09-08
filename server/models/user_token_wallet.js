@@ -1,7 +1,7 @@
 import Mongoose, { Schema } from "mongoose";
 
 const userTokenWalletSchema = new Schema({
-  userId: { type: Mongoose.Schema.Types.ObjectId, ref: "user", required: true },
+  userId: { type: Mongoose.Schema.Types.ObjectId, ref: "user"},
   token_address: {
     EVM_Based: {
       address: { type: String },

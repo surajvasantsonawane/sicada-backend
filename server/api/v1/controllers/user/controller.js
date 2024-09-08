@@ -1,5 +1,6 @@
 import Joi, { link } from "joi";
 const { ethers } = require('ethers');
+import axios from 'axios';
 
 import _ from "lodash";
 import apiError from "../../../../helper/apiError";
@@ -11,7 +12,21 @@ import userType from "../../../../enums/userType";
 import cryptoFunction from "../../../../helper/encryptionKey";
 import walletFunction from "../../../../helper/wallet";
 
-
+async function getINRtoUSDTPrice() {
+  try {
+    // Fetch the conversion rate from a third-party service
+    const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+      params: {
+        ids: 'tether', // USDT
+        vs_currencies: 'inr' // INR
+      }
+    });
+    return response.data.tether.inr;
+  } catch (error) {
+    console.error('Error fetching INR to USDT price:', error);
+    throw new Error('Failed to fetch conversion rate');
+  }
+}
 
 const QRCode = require('qrcode');
 async function generateQRCode(address) {
@@ -33,6 +48,9 @@ const { createUser, findUser, updateUser, emailMobileExist } = userServices;
 
 import { setValueServices } from "../../services/setValue";
 const { setValueLimit, updateValueLimit, findValue } = setValueServices;
+
+import { countriesListServices } from "../../services/countries";
+const { findCountriesList } = countriesListServices;
 
 import { userWalletServices } from "../../services/user_wallets";
 const { upsertUserWallet, createUserWallet, updateUserWallet, insertManyUserWallet } = userWalletServices;
@@ -170,7 +188,7 @@ export class userController {
       };
 
       // Optionally send OTP via email
-      // await commonFunction.sendMailOtpNodeMailer(email, otp);
+      //await commonFunction.sendMailOtpNodeMailer(email, otp);
 
       // Optionally send OTP via mobile number
 
@@ -348,7 +366,44 @@ export class userController {
       if (!userInfo) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
+      async function transferINRtoUSDT(req, res, next) {
+        try {
+          // Define the validation schema
+          const validationSchema = Joi.object({
+            amount: Joi.number().required(), // Make amount required
+          });
 
+          const { error, value } = validationSchema.validate(req.body);
+          if (error) {
+            throw apiError.badRequest(error.details[0].message);
+          }
+
+          // Extract validated data
+          const { amount } = value;
+
+          // Check if the user exists
+          const userData = await findUser({ _id: req.userId, userType: userType.USER });
+          if (!userData) {
+            throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+          }
+
+          // Get the conversion rate
+          const inrToUSDTPrice = await getINRtoUSDTPrice();
+
+          // Convert the amount from INR to USDT
+          const convertedAmount = amount / inrToUSDTPrice;
+
+          // Return the converted amount in the response
+          return res.status(200).json({
+            success: true,
+            convertedAmount: convertedAmount.toFixed(2) // Format to 2 decimal places
+          });
+
+        } catch (error) {
+          console.error('Error processing transferINRtoUSDT:', error);
+          return next(error);
+        }
+      }
       // Check account creation and status
       if (!userInfo.isAccountCreated) {
         throw apiError.forbidden(responseMessage.ACCOUNT_NOT_CREATED);
@@ -366,8 +421,8 @@ export class userController {
         otpData['otp.email'] = commonFunction.getOTP(); // Generate OTP for email
         otpData['otpExpireTime.email'] = otpExpireTime;
         otpVerificationUpdate['otpVerification.email'] = false;
-        // Uncomment and ensure the sendMailOtpNodeMailer function is implemented correctly
-        // await commonFunction.sendMailOtpNodeMailer(email, otpData['otp.email']);
+        // Unco//mment and ensure the sendMailOtpNodeMailer function is implemented correctly
+        //await commonFunction.sendMailOtpNodeMailer(email, otpData['otp.email']);
       }
 
       if (mobile) {
@@ -489,7 +544,9 @@ export class userController {
       // Prepare the response object with the updated information
       const responseObj = {
         _id: updateResult._id,
-        token: token
+        token: token,
+        finalConfirmation: updateResult.finalConfirmation,
+
       };
 
       // Send the response back to the client
@@ -570,7 +627,7 @@ export class userController {
         otpData['otpExpireTime.email'] = otpExpireTime; // Set expiration time for email OTP
         otpData['otpVerification.email'] = false;
         // Send the email OTP (commented out)
-        // await commonFunction.sendMailOtpNodeMailer(userResult.email, otpData['otp.email']);
+        //await commonFunction.sendMailOtpNodeMailer(userResult.email, otpData['otp.email']);
       }
 
       if (type === 'mobile' || type === 'both') {
@@ -667,10 +724,9 @@ export class userController {
     try {
       // Fetch the user to check the accountType
       let userResult = await findUser({
-        _id: req.userId,
-        status: { $ne: status.DELETE },
+        _id: req.userId
       });
-
+      console.log(userResult, 101)
       // If user not found, throw an error
       if (!userResult) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
@@ -958,7 +1014,7 @@ export class userController {
     let validationSchema = Joi.object({
       name: Joi.string().min(2).max(50).optional(),
       email: Joi.string().email().optional(),
-      countryCode: Joi.string().length(2).optional(),
+      countryCode: Joi.string().length(3).optional(),
       mobileNumber: Joi.string().pattern(/^[0-9]{10}$/).optional(),
       panCardNumber: Joi.string().pattern(/^[A-Z]{5}[0-9]{4}[A-Z]{1}$/).optional(),
       aadhaarCardNumber: Joi.string().pattern(/^[0-9]{12}$/).optional(),
@@ -1310,11 +1366,13 @@ export class userController {
       }
 
       const network = await findChain({ _id: req.query.networkDocId });
-      console.log(network.blockchainType);
+      console.log("🚀 ~ userController ~ getDepositeAddress ~ network:", network)
+      console.log(network.blockchainType, 777);
 
 
       let publicAddress = '';
       const isWallet = await findUserWallet({ userId: req.userId });
+      console.log("🚀 ~ userController ~ getDepositeAddress ~ isWallet:", isWallet)
       if (!isWallet && ((isWallet.token_address.EVM_Based && network.blockchainType == "EVM_Based") || (isWallet.token_address.TRON_Based && network.blockchainType == "TRON_Based"))) {
         const { publicKey, privateKey } = await walletFunction.generateWallet(network.blockchainType);
         publicAddress = publicKey;
@@ -1416,7 +1474,7 @@ export class userController {
       };
 
       // Optionally send OTP via email
-      // await commonFunction.sendMailOtpNodeMailer(email, otp);
+      // //await commonFunction.sendMailOtpNodeMailer(email, otp);
 
       // Optionally send OTP via mobile number
 
@@ -1525,6 +1583,170 @@ export class userController {
       return next(error);
     }
   }
+
+ /**
+     * @swagger
+     * /user/getCountriesList:
+     *   get:
+     *     summary: Get tokens
+     *     tags:
+     *       - USER
+     *     description: Get tokens
+     *     produces:
+     *       - application/json
+     *     responses:
+     *       200:
+     *         description: Returns success message with asset details
+     */
+
+ async getCountriesList(req, res, next) {
+  try {
+    let countryData = await findCountriesList();
+
+    return res.json(new response(countryData, responseMessage.GET_DATA));
+  } catch (error) {
+    console.error('Error getting order list:', error);
+    return next(error);
+  }
+}
+
+  // /**
+  //  * @swagger
+  //  * /user/transferINRtoUSDT:
+  //  *   post:
+  //  *     summary: Transfer INR to USDT
+  //  *     tags:
+  //  *       - USER
+  //  *     description: Submit an order request with various parameters.
+  //  *     produces:
+  //  *       - application/json
+  //  *     parameters:
+  //  *       - name: token
+  //  *         description: Token for authentication
+  //  *         in: header
+  //  *         required: true
+  //  *       - name: transferINRtoUSDT
+  //  *         description: Details of the order to place
+  //  *         in: body
+  //  *         required: false
+  //  *         schema:
+  //  *           $ref: '#/definitions/transferINRtoUSDT'
+  //  *     responses:
+  //  *       200:
+  //  *         description: Returns success message with asset details
+  //  */
+
+  // async transferINRtoUSDT(req, res, next) {
+  //   try {
+  //     // Define the validation schema
+  //     const validationSchema = Joi.object({
+  //       amount: Joi.number().optional(), // Make amount required
+  //     });
+
+  //     const { error, value } = validationSchema.validate(req.body);
+  //     if (error) {
+  //       throw apiError.badRequest(error.details[0].message);
+  //     }
+
+  //     // Extract validated data
+  //     const { amount } = value;
+
+  //     // Check if the user exists
+  //     const userData = await findUser({ _id: req.userId, userType: userType.USER });
+  //     if (!userData) {
+  //       throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+  //     }
+
+  //     // Get the conversion rate
+  //     const inrToUSDTPrice = await getINRtoUSDTPrice();
+
+  //     // Convert the amount from INR to USDT
+  //     const convertedAmount = amount / inrToUSDTPrice;
+
+  //     return res.json(new response(convertedAmount, responseMessage.DETAILS_FETCHED));
+
+  //   } catch (error) {
+  //     console.error('Error processing transferINRtoUSDT:', error);
+  //     return next(error);
+  //   }
+  // }
+
+  // /**
+  //  * @swagger
+  //  * /user/transferUSDTtoINR:
+  //  *   post:
+  //  *     summary: Transfer USDT to INR
+  //  *     tags:
+  //  *       - USER
+  //  *     description: Submit an order request with various parameters.
+  //  *     produces:
+  //  *       - application/json
+  //  *     parameters:
+  //  *       - name: token
+  //  *         description: Token for authentication
+  //  *         in: header
+  //  *         required: true
+  //  *       - name: transferUSDTtoINR
+  //  *         description: Details of the order to place
+  //  *         in: body
+  //  *         required: false
+  //  *         schema:
+  //  *           $ref: '#/definitions/transferUSDTtoINR'
+  //  *     responses:
+  //  *       200:
+  //  *         description: Returns success message with asset details
+  //  */
+
+  // async transferUSDTtoINR(req, res, next) {
+  //   try {
+  //     // Define the validation schema
+  //     const validationSchema = Joi.object({
+  //       amount: Joi.number().optional().min(0),
+  //     });
+
+  //     const { error, value } = validationSchema.validate(req.body);
+  //     if (error) {
+  //       throw apiError.badRequest(error.details[0].message);
+  //     }
+
+  //     // Extract validated data
+  //     const { amount } = value;
+
+  //     // Check if the user exists
+  //     const userData = await findUser({ _id: req.userId, userType: 'USER' }); // Replace 'USER' with your actual userType constant
+  //     if (!userData) {
+  //       throw apiError.notFound(responseMessage.USER_NOT_FOUND);
+  //     }
+
+  //     // Fetch the USDT to INR conversion rate
+  //     const response = await axios.get('https://api.coingecko.com/api/v3/simple/price', {
+  //       params: {
+  //         ids: 'tether',
+  //         vs_currencies: 'inr',
+  //       },
+  //     });
+
+  //     const usdtToInrRate = response.data.tether.inr;
+
+  //     // Convert the amount to INR
+  //     const amountInINR = amount * usdtToInrRate;
+
+  //     // Return the response with converted amount
+  //     return res.json({
+  //       responseCode: 200,
+  //       responseMessage: responseMessage.DETAILS_FETCHED,
+  //       amountInINR,
+  //     });
+
+  //   } catch (error) {
+  //     console.error('Error processing transferUSDTtoINR:', error);
+  //     return res.status(500).json({
+  //       responseCode: 500,
+  //       responseMessage: 'Internal Server Error',
+  //     });
+  //   }
+  // }
+
 
 
 }

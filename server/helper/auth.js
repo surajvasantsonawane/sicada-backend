@@ -9,7 +9,7 @@ module.exports = {
 
   verifyToken(req, res, next) {
     if (req.headers.token) {
-      console.log(req.headers.token, 101)
+      console.log(req.headers.token, 103)
       jwt.verify(req.headers.token, config.get('jwtsecret'), (err, result) => {
         if (err) {
           if (err.name == "TokenExpiredError") {

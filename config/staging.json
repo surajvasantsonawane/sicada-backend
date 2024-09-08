@@ -1,37 +1,37 @@
-{
-    "port": 3062,
-    "hostAddress": "192.168.0.146",
-    "databasePort": "27017",
-    "databaseName": "sicada",
-    "websocketAddress":"wss://localhost",
-    "jwtsecret": "nodejwt",
-    "jwtresetsecret": "nodejwt",
-    "jwtOptions": {
-      "expiresIn": "24h"
-    },
-    "swaggerDefinition": {
-      "info": {
-        "title": "Sicada",
-        "version": "2.0",
-        "description": "Developing a P2P platform using Binance is an exciting opportunity to empower users with direct and secure transactions. Your platform will offer a decentralized marketplace where users can trade with confidence, benefiting from Binance's robust security and global reach. This will not only enhance accessibility but also foster trust and transparency in the digital economy."
-      },
-      "basePath": "/api/v1",
-      "securityDefinitions": {
-        "tokenauth": {
-          "type": "apiKey",
-          "name": "Authorization",
-          "in": "header"
-        }
-      }
-    },
-    "cloudinary": {
-      "cloud_name": "dhpotp7ua",
-      "api_key": "299454661479376",
-      "api_secret": "iGPdD8h8smRN9DTBSi3XBclhESI"
-    },
-    "nodemailer": {
-      "service": "gmail",
-      "email": "surajzelig@gmail.com",
-      "password": "hbutblpasopdmujm"
-    }
-  }
+// {
+//     "port": 3062,
+//     "hostAddress": "192.168.0.146",
+//     "databasePort": "27017",
+//     "databaseName": "sicada",
+//     "websocketAddress":"wss://localhost",
+//     "jwtsecret": "nodejwt",
+//     "jwtresetsecret": "nodejwt",
+//     "jwtOptions": {
+//       "expiresIn": "24h"
+//     },
+//     "swaggerDefinition": {
+//       "info": {
+//         "title": "Sicada",
+//         "version": "2.0",
+//         "description": "Developing a P2P platform using Binance is an exciting opportunity to empower users with direct and secure transactions. Your platform will offer a decentralized marketplace where users can trade with confidence, benefiting from Binance's robust security and global reach. This will not only enhance accessibility but also foster trust and transparency in the digital economy."
+//       },
+//       "basePath": "/api/v1",
+//       "securityDefinitions": {
+//         "tokenauth": {
+//           "type": "apiKey",
+//           "name": "Authorization",
+//           "in": "header"
+//         }
+//       }
+//     },
+//     "cloudinary": {
+//       "cloud_name": "dhpotp7ua",
+//       "api_key": "299454661479376",
+//       "api_secret": "iGPdD8h8smRN9DTBSi3XBclhESI"
+//     },
+//     "nodemailer": {
+//       "service": "gmail",
+//       "email": "surajzelig@gmail.com",
+//       "password": "hbutblpasopdmujm"
+//     }
+//   }

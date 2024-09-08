@@ -39,9 +39,7 @@ definitions:
       auto_reply:
         type: string
       regions:
-        type: array
-        items:
-          type: string      
+        type: string      
       registered:
         type: number
       holdings_More_Than:
@@ -58,12 +56,12 @@ definitions:
       totalUSDT: 0
       minOrderLimit: 0
       maxOrderLimit: 0
-      paymentMethod: ["UPI", "PAYTM", "IMPS", "BANKTRANSFER", "DIGITAL_ERUPEE"] 
+      paymentMethod: ["UPI", "BANKTRANSFER"] 
       paymentTimeLimit: 0
       tags:  ["BANK_STATEMENT_REQUIRED", "EXTRA_KYC_REQUIRED", "NO_ADDITIONAL_VERIFICATION_NEEDED", "NO_PAYMENT_RECEIPT_NEEDED", "PAN_REQUIRED","PAYMENT_RECEIPT_REQUIRED","PAYMENT_GATEWAY_PAYOUT","PHOTO_ID_REQUIRED","TDS_APPLIED" ]
       remarks: ""
       auto_reply: ""
-      regions: ["INDIA", "UNITED_ARABS", "AUSTRALIA"]
+      regions: "INDIA"
       registered: 0
       holdings_More_Than: 0
       cryptoStatus: ["ONLINE_RIGHT_NOW", "OFFLINE_MANUALLY_LATER"]
@@ -104,6 +102,66 @@ definitions:
       countryCode: "+91"
       mobile: 7448284482
 
+  addPaymentMethod:
+    required:
+      - transactionId    
+      - paymentMethod
+    properties:
+      transactionId: 
+        type: string      
+      paymentMethod:
+        type: string  
+
+  addBankAccount:
+    required:
+      - bankName
+      - accountNumber
+      - accountHolderName
+      - ifscCode
+      - branchName
+      - bankAddress
+    properties:
+      bankName:
+        type: string
+      accountNumber:
+        type: string 
+      accountHolderName:
+        type: string
+      ifscCode:
+        type: string
+      branchName:
+        type: string    
+      bankAddress:
+        type: string  
+    example:
+      bankName: "SBI"
+      accountNumber: "12345678901"
+      accountHolderName: "SHAKAL"
+      ifscCode: "SBIN0000300"
+      branchName: "Pune Station Main Branch"
+      bankAddress: "Pune"
+
+  buyOrSell:
+    required:
+      - transactionId
+      - paymentMethod  
+      - fiatAmount
+      - receiveQuantity
+    properties:
+      transactionId: 
+        type: string
+      paymentMethod:
+        type: string
+      fiatAmount:
+        type: number
+      receiveQuantity:
+        type: number        
+    example:
+      transactionId: ""
+      paymentMethod: ""
+      fiatAmount: 0
+      receiveQuantity: 0
+
   verifyOTP:
     required:
       - email_otp
@@ -137,6 +195,15 @@ definitions:
       mobile:
         type: number        
 
+  transferINRtoUSDT:
+    properties:
+      amount:
+        type: number      
+
+  transferUSDTtoINR:
+    properties:
+      amount:
+        type: number 
 
   forgotPassword:
     required:

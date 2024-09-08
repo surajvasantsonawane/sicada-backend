@@ -1,10 +1,10 @@
 {
   "port": 3062,
   "hostAddress": "localhost:3062",
-  "databaseHost": "localhost",
-  "databasePort": "27017",
+  "databaseHost": "mongodb+srv://db-mongodb-nyc3-97578-d047bd22.mongo.ondigitalocean.com",
+  "databasePort": null,
   "databaseName": "sicada",
-  "websocketAddress":"wss://localhost",
+  "websocketAddress": "wss://localhost",
   "jwtsecret": "nodejwt",
   "jwtresetsecret": "nodejwt",
   "jwtOptions": {
@@ -34,5 +34,11 @@
     "service": "gmail",
     "email": "surajzelig@gmail.com",
     "password": "hbutblpasopdmujm"
+  },
+  "mongodb": {
+    "username": "doadmin",
+    "password": "8X91J7g34v0D5fMm",
+    "host": "db-mongodb-nyc3-97578-d047bd22.mongo.ondigitalocean.com",
+    "database": "sicada"
   }
 }

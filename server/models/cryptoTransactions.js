@@ -25,7 +25,6 @@ const cryptoTransactionSchema = new mongoose.Schema(
         },
         amount: {
             type: Number,
-
             min: 0,
             get: (v) => Math.round(v * 100000000) / 100000000 // Precision of 8 decimal places
         },
@@ -35,6 +34,8 @@ const cryptoTransactionSchema = new mongoose.Schema(
             min: 0,
             get: (v) => Math.round(v * 100) / 100 // Precision of 2 decimal places
         },
+        order: { type: Number},
+        completionRate: { type: String},
         minOrderLimit: {
             type: Number,
             default: 0,
@@ -69,9 +70,8 @@ const cryptoTransactionSchema = new mongoose.Schema(
             default: ''
         },
         regions: {
-            type: [String],
-            enum: ['INDIA', 'UNITED_ARABS', 'AUSTRALIA'],
-            default: []
+            type: String,
+            default: 'INDIA'
         },
         registered: {
             type: Number,

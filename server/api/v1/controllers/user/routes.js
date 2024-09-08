@@ -14,10 +14,11 @@ export default Express.Router()
    .get('/getTokens',controller.getTokens)
    .get('/getNetworks',controller.getNetworks)
    .get('/getCurrency',controller.getCurrency)
+   .get('/getCountriesList',controller.getCountriesList)
 
- 
    
-   // .use(auth.verifyToken)
+   
+   .use(auth.verifyToken)
    .put('/editProfile',controller.editProfile)
    .get('/getProfile',controller.getProfile)
    .put('/confirmRegistration',controller.confirmRegistration)
@@ -25,6 +26,8 @@ export default Express.Router()
    .post('/withdrawRequest',controller.withdrawRequest)
    .get('/getMyassets',controller.getMyassets)
    .put('/setValueLimit',controller.setValueLimit)
+   // .post('/transferINRtoUSDT',controller.transferINRtoUSDT)
+   // .post('/transferUSDTtoINR',controller.transferUSDTtoINR)
 
    
 
