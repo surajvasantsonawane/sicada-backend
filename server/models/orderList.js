@@ -6,7 +6,6 @@ import status from "../enums/status";
 
 const orderListSchema = new mongoose.Schema(
     {
-
         senderUserId: {
             type: mongoose.Schema.ObjectId,
             ref: "user"
@@ -15,9 +14,14 @@ const orderListSchema = new mongoose.Schema(
             type: mongoose.Schema.ObjectId,
             ref: "user"
         },
+        bankDetails: {
+            type: mongoose.Schema.ObjectId,
+            ref: "bankDetails"
+        },
         transactionId: { type: mongoose.Schema.Types.ObjectId, ref: "userPaymentTransaction" },
-        paymentTimeLimit : { type: Number },
-        orderNumber : { type: String },
+        paymentTimeLimit: { type: Number },
+        paymentMethod: { type: String },
+        orderNumber: { type: String },
         fiatAmount: { type: Number },
         price: { type: Number },
         transactionType: {
@@ -26,9 +30,9 @@ const orderListSchema = new mongoose.Schema(
         receiveQuantity: { type: Number },
         status: {
             type: String,
-            enum: [status.ACTIVE, status.BLOCK, status.DELETE],
-            default: status.ACTIVE,
-          }
+            enum: [status.PENDING, status.COMPLETED, status.FAILED],
+            default: status.PENDING,
+        }
     },
     {
         collection: 'orderList',
@@ -44,4 +48,4 @@ const orderList = mongoose.model('orderList', orderListSchema);
 
 export default orderList;
 
- 
+

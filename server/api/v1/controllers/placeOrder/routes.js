@@ -11,7 +11,7 @@ export default Express.Router()
    .use(auth.verifyToken)
    .post('/userPlaceOrder',controller.userPlaceOrder)
    .get('/getOrderList',controller.getOrderList)
-   .post('/buyOrSell',controller.buyOrSell)
+   .post('/buyOrSell',controller.placeOrderCreate)
    .post('/addPaymentMethod',controller.addPaymentMethod)
    .get('/getOrderById',controller.getOrderById)
 

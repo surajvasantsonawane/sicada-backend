@@ -1,11 +1,14 @@
 import Joi, { link } from "joi";
-const { ethers } = require('ethers');
+import config from "config";
+import apiError from '../../../../helper/apiError';
+import auth from '../../../../helper/auth';
+import status from '../../../../enums/status';
+import response from '../../../../../assets/response';
+import responseMessage from '../../../../../assets/responseMessage';
 
 import _ from "lodash";
-import apiError from "../../../../helper/apiError";
-import response from "../../../../../assets/response";
-import responseMessage from "../../../../../assets/responseMessage";
-const { v4: uuidv4 } = require('uuid');
+
+
 import userType from "../../../../enums/userType";
 
 
@@ -20,7 +23,7 @@ const { aggregateTokens, findListTokens, findToken } = tokenServices;
 
 
 import { bankDetailsServices } from "../../services/bankDetails";
-const { findBankDetails } = bankDetailsServices;
+const { findBankDetails, findSingleBankDetails } = bankDetailsServices;
 
 import { paymentTransactionServices } from "../../services/paymentTransaction";
 const { createPaymentTransaction, findPaymentTransaction, findSinglePayment } = paymentTransactionServices;
@@ -335,7 +338,7 @@ export class placeOrderController {
       const responseData = currencyData.map(transaction => ({
         _id: transaction._id,
         finalConfirmation: userData.finalConfirmation,
-        userId: transaction.userId,
+        userId: transaction.userId._id,
         name: transaction.userId.name,
         order: transaction.order,
         completionRate: transaction.completionRate,
@@ -449,72 +452,61 @@ export class placeOrderController {
    *         description: Token for authentication
    *         in: header
    *         required: true
-   *       - name: buyOrSell
-   *         description: buyOrSell
+   *       - name: placeOrderCreate
+   *         description: placeOrderCreate
    *         in: body
    *         required: true
    *         schema:
-   *           $ref: '#/definitions/buyOrSell'
+   *           $ref: '#/definitions/placeOrderCreate'
    *     responses:
    *       200:
    *         description: Returns success message with asset details
    */
-
-  async buyOrSell(req, res, next) {
+  async placeOrderCreate(req, res, next) {
     const { v4: uuidv4 } = require('uuid'); // Import uuid for generating unique IDs
     const validationSchema = Joi.object({
+      type: Joi.string().valid('BUY', 'SELL').required(), // Only accept BUY or SELL
       transactionId: Joi.string().required(),
-      paymentMethod: Joi.string().required(),
+      paymentMethod: Joi.string().valid('UPI', 'BANKTRANSFER').required(), // Only accept UPI or BANKTRANSFER
       fiatAmount: Joi.number().required(),
       receiveQuantity: Joi.number().required(),
     });
-
+  
     try {
       // Validate request body
       const { error, value } = validationSchema.validate(req.body);
       if (error) {
         throw apiError.badRequest(error.details[0].message);
       }
-
+  
       const { transactionId, paymentMethod, fiatAmount, receiveQuantity } = value;
-
+  
       // Find user by ID and userType
       const userData = await findUser({ _id: req.userId, userType: userType.USER });
       if (!userData) {
         throw apiError.notFound(responseMessage.USER_NOT_FOUND);
       }
-
+  
       // Retrieve the transaction by ID and populate user data
       const userResponse = await findCryptoTransactionsPopulateUser({ _id: transactionId });
       console.log("🚀 ~ placeOrderController ~ buyOrSell ~ userResponse:", userResponse);
-
+  
       if (!userResponse || userResponse.length === 0) {
         throw apiError.notFound(responseMessage.NO_TRANSACTIONS_FOUND);
       }
-
+  
       const transaction = userResponse[0]; // Assuming you get a single transaction or the first one
-
+  
       // Extract userId from userResponse
       const userIdFromTransaction = transaction.userId._id.toString();
-
-      // Fetch the bank details using findBankDetails function
-      const bankDetails = await findBankDetails({ userId: userIdFromTransaction });
-
-      // Ensure that the result from findBankDetails is an array before filtering
-      const matchedBankDetails = Array.isArray(bankDetails)
-        ? bankDetails.filter(bankDetail => bankDetail.userId.toString() === userIdFromTransaction)
-        : [];
-
-      // Check if the provided paymentMethod matches one in the transaction's paymentMethod array
-      const isPaymentMethodMatched = transaction.paymentMethod.includes(paymentMethod);
-
-      if (!isPaymentMethodMatched) {
-        throw apiError.badRequest(`The provided payment method '${paymentMethod}' does not match any available payment methods for this transaction.`);
-      }
-
+  
+      // Fetch the bank details using findSingleBankDetails function
+      const bankDetails = await findSingleBankDetails({ userId: userIdFromTransaction });
+  
       // Generate a unique ID using uuid
       const uniqueId = uuidv4();
-
+  
+      // Create order list with new fields
       await createOrderList({
         senderUserId: userData._id,
         receiverUserId: transaction.userId._id,
@@ -524,7 +516,10 @@ export class placeOrderController {
         fiatAmount: fiatAmount, // Static fiatAmount value as requested
         price: transaction.amount, // Use the transaction amount as the price
         receiveQuantity: receiveQuantity, // Static receiveQuantity value as requested
+        paymentMethod: paymentMethod, // Add payment method to the order list
+        bankDetails: paymentMethod == "BANKTRANSFER" ? bankDetails._id : null
       });
+  
       // Add the unique ID and matched bank details to the response data
       const responseData = {
         senderUserId: userData._id,
@@ -535,17 +530,19 @@ export class placeOrderController {
         fiatAmount: fiatAmount, // Static fiatAmount value as requested
         price: transaction.amount, // Use the transaction amount as the price
         receiveQuantity: receiveQuantity, // Static receiveQuantity value as requested
-        bankDetails: matchedBankDetails, // Add the matched bank details to the response
+        paymentMethod: paymentMethod, // Add payment method to response
+        bankDetails: paymentMethod == "BANKTRANSFER" ? bankDetails : null
       };
-
+  
       // Return the response data if the payment method matches
       return res.json(new response(responseData, responseMessage.DETAILS_FETCHED));
-
+  
     } catch (error) {
-      console.error('Error processing buyOrSell:', error);
+      console.error('Error processing placeOrderCreate:', error);
       return next(error);
     }
   }
+  
 
   /**
    * @swagger

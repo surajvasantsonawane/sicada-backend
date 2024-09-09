@@ -141,26 +141,28 @@ definitions:
       branchName: "Pune Station Main Branch"
       bankAddress: "Pune"
 
-  buyOrSell:
+  placeOrderCreate:
     required:
+      - type
       - transactionId
-      - paymentMethod  
+      - paymentMethod
       - fiatAmount
       - receiveQuantity
     properties:
+      type: 
+        type: string
       transactionId: 
         type: string
       paymentMethod:
         type: string
+      upi: 
+        type: string
+      bank:
+        type: string
       fiatAmount:
         type: number
       receiveQuantity:
-        type: number        
-    example:
-      transactionId: ""
-      paymentMethod: ""
-      fiatAmount: 0
-      receiveQuantity: 0
+        type: number
 
   verifyOTP:
     required:
