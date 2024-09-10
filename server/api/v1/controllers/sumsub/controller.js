@@ -21,5 +21,16 @@ export class SumsubController {
     }
   }
 
+  async getApplicentStatus(req, res, next) {
+    const { applicantId } = req.body;
+    try {
+      const applicant = await sumsubService.getApplicantStatus(applicantId);
+      return res.json(new response({ requestBody: req.body, applicant }, responseMessage.GET_CLIENT_STATUS));
+    } catch (error) {
+      console.error('Error getting order list:', error);
+      return next(error);
+    }
+  }
+
 }
 export default new SumsubController();

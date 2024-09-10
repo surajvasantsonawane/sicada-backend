@@ -7,6 +7,7 @@ import upload from '../../../../helper/uploadHandler';
 export default Express.Router()
 
    .post('/create-client', controller.createClient)
+   .get('/get-applicent-status', controller.getApplicentStatus)
 
    .use(upload.uploadFile)
 
