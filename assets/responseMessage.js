@@ -81,4 +81,5 @@ module.exports = {
 	UNBLOCK_BY_ADMIN: 'You have been unblocked by admin.',
 
 	GET_DATA: 'Data retrieved successfully.',
+	CREATE_CLIENT: 'Create Sumsub Client successfully.',
 };
