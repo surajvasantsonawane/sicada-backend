@@ -82,5 +82,6 @@ module.exports = {
 
 	GET_DATA: 'Data retrieved successfully.',
 	CREATE_CLIENT: 'Create Sumsub Client successfully.',
+	UPLOAD_DOCUMENT: 'Upload Document successfully.',
 	GET_CLIENT_STATUS: 'Get Sumsub Applicent Status successfully.',
 };

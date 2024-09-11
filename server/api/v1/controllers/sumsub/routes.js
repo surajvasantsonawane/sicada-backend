@@ -10,4 +10,5 @@ export default Express.Router()
    .get('/get-applicent-status', controller.getApplicentStatus)
 
    .use(upload.uploadFile)
+   .post('/upload-document', controller.uploadDocument)
 

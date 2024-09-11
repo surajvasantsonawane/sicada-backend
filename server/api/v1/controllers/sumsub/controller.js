@@ -21,6 +21,17 @@ export class SumsubController {
     }
   }
 
+  async uploadDocument(req, res, next) {
+    const { applicantId, idDocType, country } = req.body;
+    try {
+      const applicant = await sumsubService.addIdDocument(applicantId, idDocType, country, req.files[0].path);
+      return res.json(new response({ requestBody: req.body, applicant, file: req.files[0] }, responseMessage.UPLOAD_DOCUMENT));
+    } catch (error) {
+      console.error('Error getting order list:', error);
+      return next(error);
+    }
+  }
+
   async getApplicentStatus(req, res, next) {
     const { applicantId } = req.body;
     try {
